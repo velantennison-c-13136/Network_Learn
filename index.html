@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Learn Atlas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="hero" id="top">
+        <nav class="topbar" aria-label="Primary">
+            <a class="brand" href="#top">Network Learn Atlas</a>
+            <div class="nav-links">
+                <a href="#networking">Networking</a>
+                <a href="#protocols">Protocols</a>
+                <a href="#infrastructure">Infrastructure</a>
+                <a href="#database">Database</a>
+            </div>
+        </nav>
+
+        <div class="hero-copy">
+            <p class="eyebrow">A practical study site for core network and database foundations</p>
+            <h1>Learn how packets, servers, and queries move through real systems.</h1>
+            <p class="lede">
+                This guide covers every topic you listed with plain-language explanations, real-world analogies,
+                packet-flow diagrams, sample commands, SQL examples, and curated links for deeper study.
+            </p>
+
+            <div class="hero-actions">
+                <a class="button primary" href="#study-map">Start with the study map</a>
+                <a class="button secondary" href="#lab-paths">Jump to real-world labs</a>
+            </div>
+        </div>
+
+        <div class="hero-diagram">
+            <div class="hero-diagram-flow" role="img" aria-label="Detailed request flow from a client device through the network to an application and database">
+                <article class="hero-flow-card">
+                    <p class="hero-flow-step">Step 1</p>
+                    <h3>Client LAN</h3>
+                    <p>A laptop or phone joins the local network and prepares a request.</p>
+                    <ul>
+                        <li>MAC identifies the NIC on the local link</li>
+                        <li>DHCP gives a private IP, gateway, and DNS server</li>
+                        <li>DNS resolves the site name to an IP</li>
+                    </ul>
+                </article>
+
+                <article class="hero-flow-card">
+                    <p class="hero-flow-step">Step 2</p>
+                    <h3>Switch + Router</h3>
+                    <p>The local network forwards traffic toward the destination network.</p>
+                    <ul>
+                        <li>Switch forwards frames using MAC addresses</li>
+                        <li>Router moves packets between IP networks</li>
+                        <li>NAT may translate a private IP to a public IP</li>
+                    </ul>
+                </article>
+
+                <article class="hero-flow-card">
+                    <p class="hero-flow-step">Step 3</p>
+                    <h3>Internet Transit</h3>
+                    <p>The request crosses WAN links and negotiated transport and security layers.</p>
+                    <ul>
+                        <li>TCP creates a reliable session</li>
+                        <li>TLS encrypts the connection</li>
+                        <li>HTTPS carries the browser or API request</li>
+                    </ul>
+                </article>
+
+                <article class="hero-flow-card">
+                    <p class="hero-flow-step">Step 4</p>
+                    <h3>Server Edge</h3>
+                    <p>The request hits infrastructure that protects and routes traffic.</p>
+                    <ul>
+                        <li>Firewall filters allowed ports and sources</li>
+                        <li>Reverse proxy or load balancer selects a backend</li>
+                        <li>Web server passes the request to application code</li>
+                    </ul>
+                </article>
+
+                <article class="hero-flow-card">
+                    <p class="hero-flow-step">Step 5</p>
+                    <h3>Application + Database</h3>
+                    <p>The app reads or writes data and returns a response through the same path.</p>
+                    <ul>
+                        <li>Application logic validates the request</li>
+                        <li>SQL queries tables, joins, indexes, and transactions</li>
+                        <li>The response travels back to the client over HTTPS</li>
+                    </ul>
+                </article>
+            </div>
+
+            <p class="hero-diagram-note">
+                End-to-end flow: client LAN -> switch/router -> WAN/internet -> firewall/reverse proxy -> web application -> database.
+            </p>
+        </div>
+    </header>
+
+    <main class="page-shell">
+        <aside class="sidebar">
+            <nav class="sidebar-card sidebar-nav" id="topic-navigator" aria-label="Topic navigator">
+                <h2>Topic Navigator</h2>
+                <p class="sidebar-intro">Use the left rail to jump directly to any chapter or topic card.</p>
+
+                <div class="sidebar-nav-group">
+                    <a class="section-link" href="#networking">Networking</a>
+                    <div class="sidebar-nav-links">
+                        <a href="#lan-wan">LAN / WAN</a>
+                        <a href="#hub-switch-router">Hub / Switch / Router</a>
+                        <a href="#mac">MAC</a>
+                        <a href="#ipv4-ipv6">IPv4 / IPv6</a>
+                        <a href="#public-private-ip">Public / Private IP</a>
+                        <a href="#static-dynamic-ip">Static / Dynamic IP</a>
+                        <a href="#subnet">Subnet</a>
+                        <a href="#dhcp">DHCP</a>
+                        <a href="#dns">DNS</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-group">
+                    <a class="section-link" href="#protocols">Protocols</a>
+                    <div class="sidebar-nav-links">
+                        <a href="#tcp-udp">TCP / UDP</a>
+                        <a href="#http-https">HTTP / HTTPS</a>
+                        <a href="#tls">TLS</a>
+                        <a href="#ftp">FTP</a>
+                        <a href="#smtp">SMTP</a>
+                        <a href="#telnet-ssh">Telnet / SSH</a>
+                        <a href="#ports">Ports</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-group">
+                    <a class="section-link" href="#infrastructure">Server Infrastructure</a>
+                    <div class="sidebar-nav-links">
+                        <a href="#web-server">Web Server</a>
+                        <a href="#proxy-reverse-proxy">Proxy / Reverse Proxy</a>
+                        <a href="#load-balancer">Load Balancer</a>
+                        <a href="#firewall">Firewall</a>
+                        <a href="#nat">NAT</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-group">
+                    <a class="section-link" href="#database">Database</a>
+                    <div class="sidebar-nav-links">
+                        <a href="#database-concepts">Database Concepts</a>
+                        <a href="#database-types">Database Types</a>
+                        <a href="#rdbms">RDBMS</a>
+                        <a href="#sql">SQL</a>
+                        <a href="#mssql">MSSQL</a>
+                        <a href="#tables">Tables</a>
+                        <a href="#keys">Keys</a>
+                        <a href="#join">JOIN</a>
+                        <a href="#index">Index</a>
+                        <a href="#transactions">Transactions</a>
+                    </div>
+                </div>
+            </nav>
+
+            <section class="sidebar-card" id="study-map">
+                <h2>Study Map</h2>
+                <ol>
+                    <li>Start with addressing: MAC, IP, subnet, DHCP, DNS.</li>
+                    <li>Move to transport and application protocols: TCP, UDP, HTTP, TLS, SSH.</li>
+                    <li>Then learn the path through infrastructure: proxies, load balancers, firewalls, NAT.</li>
+                    <li>Finish with database foundations and SQL patterns that back modern apps.</li>
+                </ol>
+            </section>
+
+            <section class="sidebar-card">
+                <h2>Quick Memory Hooks</h2>
+                <ul>
+                    <li>MAC identifies a network card on a local link.</li>
+                    <li>IP identifies where a host lives logically.</li>
+                    <li>TCP favors reliability. UDP favors speed and low overhead.</li>
+                    <li>DNS translates names to IP addresses.</li>
+                    <li>NAT lets many private devices share one public IP.</li>
+                    <li>Indexes trade faster reads for extra write cost.</li>
+                </ul>
+            </section>
+
+            <section class="sidebar-card">
+                <h2>Visual Reference Shelf</h2>
+                <ul class="resource-list compact">
+                    <li><a href="https://www.cloudflare.com/learning/dns/what-is-dns/" target="_blank" rel="noreferrer">DNS request flow</a></li>
+                    <li><a href="https://datatracker.ietf.org/doc/html/rfc1918" target="_blank" rel="noreferrer">Private IPv4 ranges</a></li>
+                    <li><a href="https://datatracker.ietf.org/doc/html/rfc9293" target="_blank" rel="noreferrer">TCP state machine</a></li>
+                    <li><a href="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml" target="_blank" rel="noreferrer">Ports registry</a></li>
+                    <li><a href="https://learn.microsoft.com/sql/sql-server/" target="_blank" rel="noreferrer">SQL Server architecture</a></li>
+                    <li><a href="https://sqlbolt.com/lesson/select_queries_with_joins" target="_blank" rel="noreferrer">JOIN visuals</a></li>
+                </ul>
+            </section>
+        </aside>
+
+        <div class="content">
+            <section class="chapter" id="networking" data-topic-group="networking">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">1. Networking</p>
+                        <h2>Addressing, segmentation, and how hosts find each other</h2>
+                    </div>
+                    <p>
+                        This section explains how devices communicate inside a local network and how traffic exits to the internet.
+                        Focus on the difference between physical identity, logical identity, and name-based lookup.
+                    </p>
+                </div>
+
+                <div class="diagram-card">
+                    <h3>Network Scope Diagram</h3>
+                    <div class="network-scope-diagram" role="img" aria-label="LAN and WAN diagram">
+                        <article class="network-node">
+                            <h4>Home LAN</h4>
+                            <div class="network-node-visual local">
+                                <span>PC</span>
+                                <span>Phone</span>
+                                <span class="network-bar">Switch</span>
+                            </div>
+                            <p>Devices share a switch and router.</p>
+                        </article>
+
+                        <div class="network-link" aria-hidden="true">
+                            <span></span>
+                        </div>
+
+                        <article class="network-node">
+                            <h4>ISP / WAN</h4>
+                            <div class="network-node-visual wan">
+                                <span class="network-pill">Router / ISP</span>
+                            </div>
+                            <p>Routers move packets between networks.</p>
+                        </article>
+
+                        <div class="network-link" aria-hidden="true">
+                            <span></span>
+                        </div>
+
+                        <article class="network-node">
+                            <h4>Office LAN</h4>
+                            <div class="network-node-visual local">
+                                <span>Laptop</span>
+                                <span>Printer</span>
+                                <span class="network-bar">Switch</span>
+                            </div>
+                            <p>Remote users connect through another private network.</p>
+                        </article>
+                    </div>
+                    <p>The key idea: a LAN is one local broadcast domain or site, while a WAN links multiple networks over larger distances.</p>
+                </div>
+
+                <div class="topic-list">
+                    <details class="topic-card" id="lan-wan" open data-tags="lan wan local area network wide area network">
+                        <summary><span>LAN / WAN</span><span>Local scope vs long-distance connectivity</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A LAN usually covers a home, office, or campus. A WAN connects LANs across cities, countries, or cloud regions.</p>
+                            <p><strong>Real-life example:</strong> Your laptop and printer are on the same LAN. Your branch office talking to headquarters uses a WAN link.</p>
+                            <p><strong>Why it matters:</strong> LANs are typically faster, cheaper, and privately controlled. WANs add latency and rely on carriers or internet links.</p>
+                            <pre><code>Example path:
+Laptop -> office switch -> office router -> ISP -> cloud app</code></pre>
+                            <p class="reference-links"><a href="https://en.wikipedia.org/wiki/Local_area_network" target="_blank" rel="noreferrer">Reference</a><a href="https://en.wikipedia.org/wiki/Wide_area_network" target="_blank" rel="noreferrer">Compare WAN</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="hub-switch-router" data-tags="hub switch router osi layer 1 layer 2 layer 3">
+                        <summary><span>Hub / Switch / Router</span><span>How forwarding becomes smarter at each layer</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Hub:</strong> repeats every signal to every port. It has no intelligence and creates unnecessary traffic.</p>
+                            <p><strong>Switch:</strong> learns MAC addresses and forwards frames only to the right port on the local network.</p>
+                            <p><strong>Router:</strong> connects different IP networks and chooses where packets go next.</p>
+                            <p><strong>Analogy:</strong> a hub is someone shouting to a room, a switch is a receptionist who knows each desk, and a router is a dispatcher between buildings.</p>
+                            <pre><code>Device A --frame--> Switch --packet--> Router --packet--> Internet</code></pre>
+                            <p class="reference-links"><a href="https://www.cloudflare.com/learning/network-layer/what-is-a-router/" target="_blank" rel="noreferrer">Router reference</a><a href="https://www.cisco.com/c/en/us/products/switches/what-is-a-network-switch.html" target="_blank" rel="noreferrer">Switch reference</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="mac" data-tags="mac media access control nic layer 2">
+                        <summary><span>MAC</span><span>Layer 2 hardware identity on a link</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A MAC address is attached to a network interface card and is used for frame delivery inside the local segment.</p>
+                            <p><strong>Format:</strong> Usually shown as six hexadecimal pairs like <code>00:1A:2B:3C:4D:5E</code>.</p>
+                            <p><strong>Real-life example:</strong> A switch keeps a MAC address table so it knows which desk cable leads to which device.</p>
+                            <pre><code>Useful checks:
+arp -a
+ipconfig /all
+ifconfig</code></pre>
+                            <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Glossary/MAC_Address" target="_blank" rel="noreferrer">Reference</a><a href="https://en.wikipedia.org/wiki/MAC_address" target="_blank" rel="noreferrer">Format details</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="ipv4-ipv6" data-tags="ipv4 ipv6 addressing packets">
+                        <summary><span>IPv4 / IPv6</span><span>Logical addressing for modern networks</span></summary>
+                        <div class="topic-body">
+                            <p><strong>IPv4:</strong> 32-bit addresses such as <code>192.168.1.24</code>. It is still widely used but limited in address space.</p>
+                            <p><strong>IPv6:</strong> 128-bit addresses such as <code>2001:db8::10</code>. It solves address exhaustion and improves autoconfiguration.</p>
+                            <p><strong>Why it matters:</strong> Routers make decisions based on IP, not MAC. Public internet reachability depends on IP routing.</p>
+                            <pre><code>IPv4 example: 10.0.20.15/24
+IPv6 example: 2001:db8:1::15/64</code></pre>
+                            <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Glossary/IPv4" target="_blank" rel="noreferrer">IPv4</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/IPv6" target="_blank" rel="noreferrer">IPv6</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="public-private-ip" data-tags="public private ip rfc1918 nat">
+                        <summary><span>Public / Private IP</span><span>Internet-routable vs internal-only addressing</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Private ranges:</strong> <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, and <code>192.168.0.0/16</code>.</p>
+                            <p><strong>Public IPs:</strong> globally routable addresses seen on the internet.</p>
+                            <p><strong>Real-life example:</strong> Your phone gets <code>192.168.1.34</code> at home, but websites see the public IP owned by your ISP router.</p>
+                            <p><strong>Why it matters:</strong> Private IPs are efficient inside organizations; NAT translates them when accessing public services.</p>
+                            <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc1918" target="_blank" rel="noreferrer">RFC 1918</a><a href="https://www.iana.org/help/private-addresses" target="_blank" rel="noreferrer">IANA notes</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="static-dynamic-ip" data-tags="static dynamic ip dhcp reservation">
+                        <summary><span>Static / Dynamic IP</span><span>Fixed vs assigned-on-demand addressing</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Static IP:</strong> manually configured or permanently reserved. Common for servers, printers, firewalls, and DNS hosts.</p>
+                            <p><strong>Dynamic IP:</strong> assigned automatically for a lease period, usually by DHCP.</p>
+                            <p><strong>Real-life example:</strong> A web server often needs a stable address; employee laptops usually do not.</p>
+                            <pre><code>Good rule:
+Stable service endpoint -> static or reserved IP
+Temporary client device -> dynamic IP</code></pre>
+                            <p class="reference-links"><a href="https://www.cloudflare.com/learning/dns/glossary/dynamic-ip-address/" target="_blank" rel="noreferrer">Dynamic IP</a><a href="https://www.cloudflare.com/learning/dns/glossary/static-ip-address/" target="_blank" rel="noreferrer">Static IP</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="subnet" data-tags="subnet cidr mask network host broadcast">
+                        <summary><span>Subnet</span><span>Divide address space into manageable blocks</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A subnet mask or CIDR prefix says which bits describe the network and which bits describe the host.</p>
+                            <p><strong>Example:</strong> In <code>192.168.10.0/24</code>, the first 24 bits are the network. Hosts range roughly from <code>.1</code> to <code>.254</code>.</p>
+                            <p><strong>Why it matters:</strong> Subnets reduce broadcast traffic, improve security boundaries, and make routing scalable.</p>
+                            <pre><code>/24 = 255.255.255.0 = 256 total addresses
+/26 = 255.255.255.192 = 64 total addresses</code></pre>
+                            <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Glossary/Subnet_mask" target="_blank" rel="noreferrer">Subnet masks</a><a href="https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing" target="_blank" rel="noreferrer">CIDR</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="dhcp" data-tags="dhcp dora discover offer request acknowledge">
+                        <summary><span>DHCP</span><span>Automatic IP configuration</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> DHCP gives devices an IP address, subnet mask, default gateway, DNS server, and lease time.</p>
+                            <p><strong>Classic flow:</strong> DORA = Discover, Offer, Request, Acknowledge.</p>
+                            <p><strong>Real-life example:</strong> When a guest joins office Wi-Fi, the device gets working network settings within seconds without manual typing.</p>
+                            <pre><code>DORA flow:
+Client -> Discover
+Server -> Offer
+Client -> Request
+Server -> Acknowledge</code></pre>
+                            <p class="reference-links"><a href="https://www.cloudflare.com/learning/dns/glossary/dynamic-host-configuration-protocol-dhcp/" target="_blank" rel="noreferrer">DHCP overview</a><a href="https://datatracker.ietf.org/doc/html/rfc2131" target="_blank" rel="noreferrer">RFC 2131</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="dns" data-tags="dns resolver records aaaa cname mx ttl">
+                        <summary><span>DNS</span><span>The internet's phonebook for names</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> DNS resolves names like <code>example.com</code> into IP addresses.</p>
+                            <p><strong>Common records:</strong> A, AAAA, CNAME, MX, TXT, NS.</p>
+                            <p><strong>Real-life example:</strong> Typing a URL into a browser usually triggers DNS before any HTTP request can be sent.</p>
+                            <pre><code>Useful checks:
+nslookup example.com
+dig example.com
+dig example.com MX</code></pre>
+                            <p class="reference-links"><a href="https://www.cloudflare.com/learning/dns/what-is-dns/" target="_blank" rel="noreferrer">DNS overview</a><a href="https://datatracker.ietf.org/doc/html/rfc1035" target="_blank" rel="noreferrer">RFC 1035</a></p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <section class="chapter" id="protocols" data-topic-group="protocols">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">2. Network Protocols</p>
+                        <h2>Rules that govern delivery, sessions, and application behavior</h2>
+                    </div>
+                    <p>
+                        Protocols define how two systems agree on formatting, timing, error handling, encryption, and session state.
+                        A strong mental model here makes troubleshooting far easier.
+                    </p>
+                </div>
+
+                <div class="diagram-card">
+                    <h3>From Browser Request to Encrypted Response</h3>
+                    <svg viewBox="0 0 800 220" role="img" aria-label="Protocol flow diagram">
+                        <rect x="30" y="78" width="110" height="52" rx="16"></rect>
+                        <rect x="180" y="78" width="110" height="52" rx="16"></rect>
+                        <rect x="330" y="78" width="110" height="52" rx="16"></rect>
+                        <rect x="480" y="78" width="110" height="52" rx="16"></rect>
+                        <rect x="630" y="78" width="140" height="52" rx="16"></rect>
+                        <path d="M140 104 H180" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M290 104 H330" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M440 104 H480" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M590 104 H630" stroke-width="6" stroke-linecap="round"></path>
+                        <text x="85" y="110" text-anchor="middle">DNS</text>
+                        <text x="235" y="110" text-anchor="middle">TCP</text>
+                        <text x="385" y="110" text-anchor="middle">TLS</text>
+                        <text x="535" y="110" text-anchor="middle">HTTP</text>
+                        <text x="700" y="110" text-anchor="middle">Web Response</text>
+                        <text x="400" y="185" text-anchor="middle">Each protocol solves a different problem in the request chain.</text>
+                    </svg>
+                </div>
+
+                <div class="topic-list">
+                    <details class="topic-card" id="tcp-udp" open data-tags="tcp udp transport reliability latency streaming">
+                        <summary><span>TCP / UDP</span><span>Reliable streams vs fast datagrams</span></summary>
+                        <div class="topic-body">
+                            <p><strong>TCP:</strong> connection-oriented, ordered, retransmits lost segments, supports flow and congestion control.</p>
+                            <p><strong>UDP:</strong> connectionless, lower overhead, no built-in guarantee of delivery or order.</p>
+                            <p><strong>Use TCP for:</strong> web pages, APIs, email, SSH, database connections.</p>
+                            <p><strong>Use UDP for:</strong> DNS lookups, live voice/video, gaming, telemetry.</p>
+                            <pre><code>TCP three-way handshake:
+SYN -> SYN-ACK -> ACK</code></pre>
+                            <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc9293" target="_blank" rel="noreferrer">TCP</a><a href="https://datatracker.ietf.org/doc/html/rfc768" target="_blank" rel="noreferrer">UDP</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="http-https" data-tags="http https methods headers request response cookies">
+                        <summary><span>HTTP / HTTPS</span><span>How browsers and APIs exchange application data</span></summary>
+                        <div class="topic-body">
+                            <p><strong>HTTP:</strong> an application-layer protocol for requests and responses.</p>
+                            <p><strong>HTTPS:</strong> HTTP carried over TLS, which provides confidentiality and server authentication.</p>
+                            <p><strong>Common pieces:</strong> methods, URLs, headers, cookies, status codes, bodies.</p>
+                            <pre><code>GET /products/42 HTTP/1.1
+Host: shop.example.com
+Accept: application/json</code></pre>
+                            <p><strong>Real-life example:</strong> Loading a product page, sending login credentials, or calling a JSON API all rely on HTTP semantics.</p>
+                            <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" target="_blank" rel="noreferrer">HTTP overview</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTPS" target="_blank" rel="noreferrer">HTTPS</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="tls" data-tags="tls certificates encryption handshake">
+                        <summary><span>TLS</span><span>Encrypt the channel and verify who you reached</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> TLS secures a connection with encryption, integrity checks, and certificate-based authentication.</p>
+                            <p><strong>Handshake idea:</strong> client and server negotiate ciphers, validate the certificate chain, agree on session keys, then encrypt data.</p>
+                            <p><strong>Real-life example:</strong> Online banking depends on TLS so attackers on public Wi-Fi cannot read passwords in transit.</p>
+                            <pre><code>Common checks:
+openssl s_client -connect example.com:443
+curl -I https://example.com</code></pre>
+                            <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc8446" target="_blank" rel="noreferrer">TLS 1.3</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS" target="_blank" rel="noreferrer">TLS glossary</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="ftp" data-tags="ftp file transfer active passive">
+                        <summary><span>FTP</span><span>Legacy file transfer with separate control and data channels</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> FTP moves files between client and server using a control connection and a separate data connection.</p>
+                            <p><strong>Why it is tricky:</strong> NAT and firewalls can complicate active mode, so passive mode is common.</p>
+                            <p><strong>Modern note:</strong> Plain FTP is not encrypted. SFTP and FTPS are preferred for production use.</p>
+                            <pre><code>Legacy ports:
+21 = control
+20 = data in active mode</code></pre>
+                            <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc959" target="_blank" rel="noreferrer">RFC 959</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/FTP" target="_blank" rel="noreferrer">FTP glossary</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="smtp" data-tags="smtp email relay mx mail server">
+                        <summary><span>SMTP</span><span>Mail transfer between clients and mail servers</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> SMTP sends outgoing mail and relays messages between mail servers.</p>
+                            <p><strong>Typical flow:</strong> mail client submits to an SMTP server, which looks up the recipient domain's MX record, then relays.</p>
+                            <p><strong>Real-life example:</strong> A password reset email usually goes through SMTP infrastructure before it reaches your inbox.</p>
+                            <pre><code>Common ports:
+25 = relay
+587 = authenticated submission
+465 = implicit TLS</code></pre>
+                            <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc5321" target="_blank" rel="noreferrer">SMTP reference</a><a href="https://www.cloudflare.com/learning/email-security/what-is-smtp/" target="_blank" rel="noreferrer">SMTP overview</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="telnet-ssh" data-tags="telnet ssh remote shell encrypted access">
+                        <summary><span>Telnet / SSH</span><span>Remote shells, with and without security</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Telnet:</strong> remote terminal access without encryption. It is useful historically, but unsafe on real networks.</p>
+                            <p><strong>SSH:</strong> encrypted remote administration, tunneling, and secure copy.</p>
+                            <p><strong>Real-life example:</strong> Developers log into Linux servers with SSH to inspect logs, deploy changes, or forward ports securely.</p>
+                            <pre><code>ssh user@server.example.com
+scp backup.sql admin@server:/srv/backups/</code></pre>
+                            <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc854" target="_blank" rel="noreferrer">Telnet</a><a href="https://datatracker.ietf.org/doc/html/rfc4251" target="_blank" rel="noreferrer">SSH</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="ports" data-tags="ports well known ephemeral listening service">
+                        <summary><span>Ports</span><span>Which application on a host should receive the traffic?</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> IP gets data to a machine; a port gets it to the right process on that machine.</p>
+                            <table>
+                                <thead>
+                                    <tr><th>Service</th><th>Port</th><th>Notes</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>HTTP</td><td>80</td><td>Plain web traffic</td></tr>
+                                    <tr><td>HTTPS</td><td>443</td><td>Encrypted web traffic</td></tr>
+                                    <tr><td>SSH</td><td>22</td><td>Remote shell</td></tr>
+                                    <tr><td>DNS</td><td>53</td><td>Often UDP, sometimes TCP</td></tr>
+                                    <tr><td>SMTP</td><td>25 / 587</td><td>Mail relay and submission</td></tr>
+                                </tbody>
+                            </table>
+                            <pre><code>Useful checks:
+netstat -an
+lsof -i :443</code></pre>
+                            <p class="reference-links"><a href="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml" target="_blank" rel="noreferrer">IANA registry</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/Port" target="_blank" rel="noreferrer">Port glossary</a></p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <section class="chapter" id="infrastructure" data-topic-group="infrastructure">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">3. Server Infrastructure</p>
+                        <h2>The middle layers that make internet systems resilient and secure</h2>
+                    </div>
+                    <p>
+                        Infrastructure components shape performance, security, and availability.
+                        They are the reason modern applications can scale beyond a single machine.
+                    </p>
+                </div>
+
+                <div class="diagram-card">
+                    <h3>Typical Web Request Through Infrastructure</h3>
+                    <svg viewBox="0 0 800 240" role="img" aria-label="Infrastructure flow diagram">
+                        <rect x="20" y="94" width="90" height="48" rx="16"></rect>
+                        <rect x="150" y="94" width="110" height="48" rx="16"></rect>
+                        <rect x="300" y="94" width="130" height="48" rx="16"></rect>
+                        <rect x="470" y="60" width="120" height="48" rx="16"></rect>
+                        <rect x="470" y="130" width="120" height="48" rx="16"></rect>
+                        <rect x="640" y="94" width="120" height="48" rx="16"></rect>
+                        <path d="M110 118 H150" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M260 118 H300" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M430 118 H470" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M590 118 H640" stroke-width="6" stroke-linecap="round"></path>
+                        <text x="65" y="123" text-anchor="middle">Client</text>
+                        <text x="205" y="123" text-anchor="middle">Firewall</text>
+                        <text x="365" y="123" text-anchor="middle">Reverse Proxy</text>
+                        <text x="530" y="90" text-anchor="middle">App A</text>
+                        <text x="530" y="160" text-anchor="middle">App B</text>
+                        <text x="700" y="123" text-anchor="middle">Database</text>
+                        <text x="400" y="214" text-anchor="middle">Load balancing distributes requests across healthy servers.</text>
+                    </svg>
+                </div>
+
+                <div class="topic-list">
+                    <details class="topic-card" id="web-server" open data-tags="web server apache nginx iis application hosting">
+                        <summary><span>Web Server</span><span>Software that accepts HTTP(S) requests and returns content</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A web server listens on ports such as 80 or 443 and serves static files or forwards dynamic requests to application code.</p>
+                            <p><strong>Examples:</strong> Nginx, Apache HTTP Server, Microsoft IIS, Caddy.</p>
+                            <p><strong>Real-life example:</strong> A landing page image, CSS file, and JavaScript bundle may be served directly by Nginx, while API calls are proxied to an app process.</p>
+                            <pre><code>Example responsibilities:
+listen for requests
+serve static assets
+terminate TLS
+write access logs</code></pre>
+                            <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_web_server" target="_blank" rel="noreferrer">Web server basics</a><a href="https://nginx.org/en/docs/" target="_blank" rel="noreferrer">Nginx docs</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="proxy-reverse-proxy" data-tags="proxy reverse proxy forward proxy caching ingress">
+                        <summary><span>Proxy / Reverse Proxy</span><span>Intermediaries that represent the client or the server</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Forward proxy:</strong> acts on behalf of clients, often for policy, privacy, or outbound filtering.</p>
+                            <p><strong>Reverse proxy:</strong> acts on behalf of servers, commonly for TLS termination, caching, routing, and hiding backend details.</p>
+                            <p><strong>Real-life example:</strong> A reverse proxy can route <code>/api</code> to an application server and <code>/images</code> to static storage.</p>
+                            <pre><code>Client -> Reverse Proxy -> App Server
+Employee Browser -> Forward Proxy -> Internet</code></pre>
+                            <p class="reference-links"><a href="https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/" target="_blank" rel="noreferrer">Reverse proxy</a><a href="https://www.cloudflare.com/learning/cdn/glossary/what-is-a-proxy-server/" target="_blank" rel="noreferrer">Proxy server</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="load-balancer" data-tags="load balancer round robin least connections health checks">
+                        <summary><span>Load Balancer</span><span>Distribute traffic so systems stay fast and available</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A load balancer spreads requests across multiple healthy backend servers.</p>
+                            <p><strong>Common strategies:</strong> round robin, least connections, weighted routing, and consistent hashing.</p>
+                            <p><strong>Why it matters:</strong> One server can fail without taking down the whole service if health checks remove it from rotation.</p>
+                            <pre><code>Incoming requests:
+R1 -> App A
+R2 -> App B
+R3 -> App A</code></pre>
+                            <p class="reference-links"><a href="https://aws.amazon.com/what-is/load-balancing/" target="_blank" rel="noreferrer">Load balancing</a><a href="https://www.nginx.com/resources/glossary/load-balancing/" target="_blank" rel="noreferrer">Algorithms</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="firewall" data-tags="firewall allow deny rule stateful stateless ports ip filtering">
+                        <summary><span>Firewall</span><span>Control which traffic is allowed through</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A firewall filters traffic by source, destination, port, protocol, and sometimes connection state or application rules.</p>
+                            <p><strong>Real-life example:</strong> A database server may allow port 1433 only from an application subnet, not from the public internet.</p>
+                            <pre><code>Allow: app-subnet -> db-server:1433
+Deny: any -> db-server:1433 from internet</code></pre>
+                            <p><strong>Why it matters:</strong> Firewalls reduce attack surface and enforce segmentation boundaries.</p>
+                            <p class="reference-links"><a href="https://www.cisa.gov/news-events/news/understanding-firewalls-home-and-small-office-use" target="_blank" rel="noreferrer">Firewall basics</a><a href="https://www.cloudflare.com/learning/security/what-is-a-firewall/" target="_blank" rel="noreferrer">Reference</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="nat" data-tags="nat network address translation pat masquerade">
+                        <summary><span>NAT</span><span>Translate addresses between private and public networks</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> NAT rewrites source or destination addresses as packets move between networks.</p>
+                            <p><strong>Most common case:</strong> many home or office devices share one public IP through port address translation.</p>
+                            <p><strong>Real-life example:</strong> Ten laptops browse the web, but the outside world sees one public IP from the gateway router.</p>
+                            <pre><code>Inside client: 192.168.1.24:51514
+Translated to: 203.0.113.10:43001</code></pre>
+                            <p class="reference-links"><a href="https://www.cisco.com/c/en/us/products/security/what-is-network-address-translation.html" target="_blank" rel="noreferrer">NAT overview</a><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html" target="_blank" rel="noreferrer">Cloud example</a></p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <section class="chapter" id="database" data-topic-group="database">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">4. Database</p>
+                        <h2>How applications store, relate, query, and protect data</h2>
+                    </div>
+                    <p>
+                        Databases sit behind most serious applications. The same request that traveled through the network often ends by reading or updating rows.
+                        This section anchors the data side of system design.
+                    </p>
+                </div>
+
+                <div class="diagram-card">
+                    <h3>From User Action to Stored Data</h3>
+                    <svg viewBox="0 0 800 240" role="img" aria-label="Database request path diagram">
+                        <rect x="20" y="94" width="100" height="48" rx="16"></rect>
+                        <rect x="160" y="94" width="120" height="48" rx="16"></rect>
+                        <rect x="320" y="94" width="120" height="48" rx="16"></rect>
+                        <rect x="480" y="62" width="130" height="48" rx="16"></rect>
+                        <rect x="480" y="130" width="130" height="48" rx="16"></rect>
+                        <rect x="650" y="94" width="120" height="48" rx="16"></rect>
+                        <path d="M120 118 H160" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M280 118 H320" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M440 118 H480" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M610 118 H650" stroke-width="6" stroke-linecap="round"></path>
+                        <text x="70" y="123" text-anchor="middle">User</text>
+                        <text x="220" y="123" text-anchor="middle">Web App</text>
+                        <text x="380" y="123" text-anchor="middle">SQL Query</text>
+                        <text x="545" y="91" text-anchor="middle">Index Seek</text>
+                        <text x="545" y="159" text-anchor="middle">Transaction Log</text>
+                        <text x="710" y="123" text-anchor="middle">Table Rows</text>
+                        <text x="400" y="214" text-anchor="middle">Good schema and query design shape performance and correctness.</text>
+                    </svg>
+                </div>
+
+                <div class="topic-list">
+                    <details class="topic-card" id="database-concepts" open data-tags="database concepts persistence concurrency durability schema">
+                        <summary><span>Database Concepts</span><span>Persist data, protect consistency, and support queries</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concerns:</strong> persistence, consistency, concurrency, recovery, querying, and access control.</p>
+                            <p><strong>Real-life example:</strong> An ecommerce database must keep product stock accurate even if hundreds of users buy at once.</p>
+                            <p><strong>Mental model:</strong> a database is not just storage; it is a controlled system for reading and changing structured data safely.</p>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/sql-server/" target="_blank" rel="noreferrer">SQL Server docs</a><a href="https://en.wikipedia.org/wiki/Database" target="_blank" rel="noreferrer">Overview</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="database-types" data-tags="database types relational nosql document key value graph columnar time series">
+                        <summary><span>Database Types</span><span>Choose structure based on workload and access pattern</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Relational:</strong> tables, schema, joins, transactions.</p>
+                            <p><strong>Document:</strong> flexible JSON-like records, good for evolving objects.</p>
+                            <p><strong>Key-value:</strong> extremely fast lookup by key, common in caching.</p>
+                            <p><strong>Graph:</strong> optimized for relationships such as fraud or social networks.</p>
+                            <p><strong>Columnar/time-series:</strong> analytics and measurements over time.</p>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/azure/architecture/data-guide/technology-choices/data-store-overview" target="_blank" rel="noreferrer">Data store choices</a><a href="https://en.wikipedia.org/wiki/NoSQL" target="_blank" rel="noreferrer">NoSQL overview</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="rdbms" data-tags="rdbms relational database management system oracle postgres mysql sql server">
+                        <summary><span>RDBMS</span><span>Relational engines with schema, constraints, and SQL</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> An RDBMS stores data in related tables and enforces rules such as primary keys, foreign keys, and transactions.</p>
+                            <p><strong>Examples:</strong> SQL Server, PostgreSQL, MySQL, Oracle Database.</p>
+                            <p><strong>When it fits:</strong> when correctness, reporting, and multi-table relations matter more than schema flexibility.</p>
+                            <p class="reference-links"><a href="https://en.wikipedia.org/wiki/Relational_database_management_system" target="_blank" rel="noreferrer">RDBMS basics</a><a href="https://learn.microsoft.com/sql/sql-server/" target="_blank" rel="noreferrer">SQL Server family</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="sql" data-tags="sql select insert update delete where order by group by">
+                        <summary><span>SQL</span><span>The language used to define and query relational data</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core commands:</strong> SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP.</p>
+                            <p><strong>Why it matters:</strong> SQL expresses filtering, aggregation, sorting, joins, and transactional updates declaratively.</p>
+                            <pre><code>SELECT customer_id, COUNT(*) AS orders
+FROM Orders
+WHERE order_date &gt;= '2026-01-01'
+GROUP BY customer_id
+ORDER BY orders DESC;</code></pre>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/t-sql/language-reference" target="_blank" rel="noreferrer">T-SQL reference</a><a href="https://sqlbolt.com/" target="_blank" rel="noreferrer">Interactive practice</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="mssql" data-tags="mssql microsoft sql server ssms t-sql sql server agent">
+                        <summary><span>MSSQL</span><span>Microsoft SQL Server and its T-SQL ecosystem</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> MSSQL usually refers to Microsoft SQL Server, a relational database platform using T-SQL.</p>
+                            <p><strong>Common tools:</strong> SQL Server Management Studio, Azure Data Studio, SQL Server Agent, Profiler, execution plans.</p>
+                            <p><strong>Real-life example:</strong> Enterprise ERP or reporting systems often use SQL Server because of its Windows integration, backup tools, and BI ecosystem.</p>
+                            <pre><code>SELECT @@VERSION;
+GO
+SELECT DB_NAME() AS current_database;</code></pre>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/sql-server/what-is-sql-server" target="_blank" rel="noreferrer">What is SQL Server?</a><a href="https://learn.microsoft.com/sql/t-sql/language-reference" target="_blank" rel="noreferrer">T-SQL reference</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="tables" data-tags="tables rows columns schema normalization">
+                        <summary><span>Tables</span><span>The fundamental structure for relational data</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A table stores rows of entities with named columns that define allowed data types.</p>
+                            <p><strong>Real-life example:</strong> <code>Customers</code>, <code>Orders</code>, and <code>OrderItems</code> map well to tables in a sales system.</p>
+                            <pre><code>CREATE TABLE Customers (
+    customer_id INT PRIMARY KEY,
+    full_name NVARCHAR(100) NOT NULL,
+    email NVARCHAR(255) UNIQUE
+);</code></pre>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/relational-databases/tables/tables" target="_blank" rel="noreferrer">Tables in SQL Server</a><a href="https://en.wikipedia.org/wiki/Table_(database)" target="_blank" rel="noreferrer">Concept overview</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="keys" data-tags="keys primary key foreign key candidate key surrogate key natural key">
+                        <summary><span>Keys</span><span>Identify rows and enforce relationships</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Primary key:</strong> uniquely identifies a row.</p>
+                            <p><strong>Foreign key:</strong> references a key in another table and preserves relational integrity.</p>
+                            <p><strong>Real-life example:</strong> Every order belongs to one customer, so <code>Orders.customer_id</code> points to <code>Customers.customer_id</code>.</p>
+                            <pre><code>ALTER TABLE Orders
+ADD CONSTRAINT FK_Orders_Customers
+FOREIGN KEY (customer_id) REFERENCES Customers(customer_id);</code></pre>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/relational-databases/tables/primary-and-foreign-key-constraints" target="_blank" rel="noreferrer">Primary and foreign keys</a><a href="https://en.wikipedia.org/wiki/Foreign_key" target="_blank" rel="noreferrer">More detail</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="join" data-tags="join inner left right full relational query">
+                        <summary><span>JOIN</span><span>Combine related rows across tables</span></summary>
+                        <div class="topic-body">
+                            <p><strong>INNER JOIN:</strong> only matching rows.</p>
+                            <p><strong>LEFT JOIN:</strong> all left rows, plus matches from the right.</p>
+                            <p><strong>FULL JOIN:</strong> keep non-matching rows from both sides.</p>
+                            <p><strong>Real-life example:</strong> show every order with the customer name that placed it.</p>
+                            <pre><code>SELECT o.order_id, c.full_name
+FROM Orders AS o
+INNER JOIN Customers AS c
+    ON c.customer_id = o.customer_id;</code></pre>
+                            <p class="reference-links"><a href="https://sqlbolt.com/lesson/select_queries_with_joins" target="_blank" rel="noreferrer">JOIN practice</a><a href="https://learn.microsoft.com/sql/t-sql/queries/from-transact-sql" target="_blank" rel="noreferrer">FROM and JOIN syntax</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="index" data-tags="index clustered nonclustered b-tree seek scan performance">
+                        <summary><span>Index</span><span>Speed up reads by organizing lookup paths</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> An index is an extra structure that helps the engine find rows without scanning the whole table.</p>
+                            <p><strong>Tradeoff:</strong> reads become faster, but inserts and updates may cost more because the index must also be maintained.</p>
+                            <p><strong>Real-life example:</strong> finding one employee by email is faster with an index on the <code>email</code> column.</p>
+                            <pre><code>CREATE INDEX IX_Customers_Email
+ON Customers(email);</code></pre>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/relational-databases/sql-server-index-design-guide" target="_blank" rel="noreferrer">Index design guide</a><a href="https://use-the-index-luke.com/" target="_blank" rel="noreferrer">Conceptual guide</a></p>
+                        </div>
+                    </details>
+
+                    <details class="topic-card" id="transactions" data-tags="transactions acid commit rollback isolation consistency">
+                        <summary><span>Transactions</span><span>Make multi-step changes safe and reversible</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A transaction groups related statements so they succeed or fail as one unit.</p>
+                            <p><strong>ACID:</strong> atomicity, consistency, isolation, durability.</p>
+                            <p><strong>Real-life example:</strong> transferring money must subtract from one account and add to another together, never half-complete.</p>
+                            <pre><code>BEGIN TRANSACTION;
+
+UPDATE Accounts SET balance = balance - 100 WHERE account_id = 1;
+UPDATE Accounts SET balance = balance + 100 WHERE account_id = 2;
+
+COMMIT;
+-- or ROLLBACK if a step fails</code></pre>
+                            <p class="reference-links"><a href="https://learn.microsoft.com/sql/t-sql/language-elements/transactions-transact-sql" target="_blank" rel="noreferrer">Transactions in T-SQL</a><a href="https://en.wikipedia.org/wiki/ACID" target="_blank" rel="noreferrer">ACID model</a></p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <section class="chapter" id="lab-paths">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">Practice Labs</p>
+                        <h2>Three hands-on paths to turn definitions into working intuition</h2>
+                    </div>
+                </div>
+
+                <div class="lab-grid">
+                    <article class="lab-card">
+                        <h3>Lab 1: Trace a Website Visit</h3>
+                        <ol>
+                            <li>Run <code>ipconfig /all</code> or <code>ifconfig</code> and note your IP, gateway, and DNS server.</li>
+                            <li>Run <code>nslookup example.com</code> and capture the returned IP.</li>
+                            <li>Run <code>curl -I https://example.com</code> and inspect the response headers.</li>
+                            <li>Explain where DHCP, DNS, TCP, TLS, HTTPS, NAT, and the web server each appear in the path.</li>
+                        </ol>
+                    </article>
+
+                    <article class="lab-card">
+                        <h3>Lab 2: Design a Small Office Network</h3>
+                        <ol>
+                            <li>Choose a private range such as <code>192.168.50.0/24</code>.</li>
+                            <li>Create a subnet plan for users, printers, and servers.</li>
+                            <li>Decide which devices need static IPs and which should be dynamic.</li>
+                            <li>Write example firewall rules and explain where NAT would happen.</li>
+                        </ol>
+                    </article>
+
+                    <article class="lab-card">
+                        <h3>Lab 3: Model a Store Database</h3>
+                        <ol>
+                            <li>Create tables for <code>Customers</code>, <code>Orders</code>, and <code>OrderItems</code>.</li>
+                            <li>Add primary and foreign keys.</li>
+                            <li>Write one <code>JOIN</code> query and one indexed lookup query.</li>
+                            <li>Wrap a stock update and order creation inside a transaction.</li>
+                        </ol>
+                    </article>
+                </div>
+            </section>
+
+            <section class="chapter" id="cheat-sheets">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">Cheat Sheets</p>
+                        <h2>Short tables worth revisiting before interviews or labs</h2>
+                    </div>
+                </div>
+
+                <div class="cheat-grid">
+                    <article class="cheat-card">
+                        <h3>Private IPv4 Ranges</h3>
+                        <table>
+                            <thead>
+                                <tr><th>Range</th><th>Use</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>10.0.0.0/8</td><td>Large internal networks</td></tr>
+                                <tr><td>172.16.0.0/12</td><td>Medium private spaces</td></tr>
+                                <tr><td>192.168.0.0/16</td><td>Homes and small offices</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <article class="cheat-card">
+                        <h3>Frequent Ports</h3>
+                        <table>
+                            <thead>
+                                <tr><th>Protocol</th><th>Port</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>SSH</td><td>22</td></tr>
+                                <tr><td>DNS</td><td>53</td></tr>
+                                <tr><td>HTTP</td><td>80</td></tr>
+                                <tr><td>HTTPS</td><td>443</td></tr>
+                                <tr><td>SMTP</td><td>25 / 587</td></tr>
+                                <tr><td>MSSQL</td><td>1433</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <article class="cheat-card">
+                        <h3>JOIN Quick Guide</h3>
+                        <table>
+                            <thead>
+                                <tr><th>JOIN</th><th>Returns</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>INNER</td><td>Matches only</td></tr>
+                                <tr><td>LEFT</td><td>All left rows + matches</td></tr>
+                                <tr><td>RIGHT</td><td>All right rows + matches</td></tr>
+                                <tr><td>FULL</td><td>All rows from both sides</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+                </div>
+            </section>
+
+            <section class="chapter references">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">Reference Links</p>
+                        <h2>Authoritative reading for deeper study</h2>
+                    </div>
+                </div>
+                <div class="reference-columns">
+                    <article>
+                        <h3>Networking</h3>
+                        <ul class="resource-list">
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Glossary/IPv4" target="_blank" rel="noreferrer">MDN IPv4</a></li>
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Glossary/IPv6" target="_blank" rel="noreferrer">MDN IPv6</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc1918" target="_blank" rel="noreferrer">RFC 1918 private addressing</a></li>
+                            <li><a href="https://www.cloudflare.com/learning/dns/what-is-dns/" target="_blank" rel="noreferrer">Cloudflare DNS guide</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc2131" target="_blank" rel="noreferrer">RFC 2131 DHCP</a></li>
+                        </ul>
+                    </article>
+                    <article>
+                        <h3>Protocols</h3>
+                        <ul class="resource-list">
+                            <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" target="_blank" rel="noreferrer">MDN HTTP overview</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc9293" target="_blank" rel="noreferrer">TCP specification</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc768" target="_blank" rel="noreferrer">UDP specification</a></li>
+                            <li><a href="https://datatracker.ietf.org/doc/html/rfc8446" target="_blank" rel="noreferrer">TLS 1.3</a></li>
+                            <li><a href="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml" target="_blank" rel="noreferrer">IANA ports list</a></li>
+                        </ul>
+                    </article>
+                    <article>
+                        <h3>Infrastructure and Databases</h3>
+                        <ul class="resource-list">
+                            <li><a href="https://aws.amazon.com/what-is/load-balancing/" target="_blank" rel="noreferrer">Load balancer primer</a></li>
+                            <li><a href="https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/" target="_blank" rel="noreferrer">Reverse proxy guide</a></li>
+                            <li><a href="https://learn.microsoft.com/sql/sql-server/" target="_blank" rel="noreferrer">SQL Server docs</a></li>
+                            <li><a href="https://learn.microsoft.com/sql/t-sql/language-reference" target="_blank" rel="noreferrer">T-SQL language reference</a></li>
+                            <li><a href="https://sqlbolt.com/" target="_blank" rel="noreferrer">SQLBolt interactive SQL lessons</a></li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p>Use this site as a study base, then reinforce it by running commands, sketching topologies, and writing SQL by hand.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
