@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="demo-styles.css">
 </head>
 <body>
     <header class="hero" id="top">
@@ -149,6 +150,7 @@
                     <div class="sidebar-nav-links">
                         <a href="#database-concepts">Database Concepts</a>
                         <a href="#database-types">Database Types</a>
+                        <a href="#sql-vs-nosql">SQL vs NoSQL</a>
                         <a href="#rdbms">RDBMS</a>
                         <a href="#sql">SQL</a>
                         <a href="#mssql">MSSQL</a>
@@ -668,6 +670,23 @@ Translated to: 203.0.113.10:43001</code></pre>
                         </div>
                     </details>
 
+                    <details class="topic-card" id="sql-vs-nosql" data-tags="sql nosql difference comparison relational document key-value graph schema flexible acid base cap">
+                        <summary><span>SQL vs NoSQL</span><span>Understand when to use relational vs non-relational databases</span></summary>
+                        <div class="topic-body">
+                            <p><strong>SQL (Relational):</strong> Data lives in structured tables with rows and columns. Schema is defined upfront. Supports JOIN, transactions (ACID), and complex queries. Best when data is predictable and relationships matter.</p>
+                            <p><strong>NoSQL (Non-Relational):</strong> Flexible schema — documents, key-value pairs, graphs, or wide columns. Designed for horizontal scaling, high throughput, and evolving data shapes.</p>
+                            <p><strong>Key difference:</strong> SQL enforces structure and relationships; NoSQL trades that rigidity for flexibility and scale.</p>
+                            <pre><code>SQL:   SELECT * FROM Users WHERE age &gt; 25;
+NoSQL: db.users.find({ age: { $gt: 25 } });</code></pre>
+                            <p><strong>When to choose:</strong></p>
+                            <ul style="margin:0.3rem 0;padding-left:1.4rem;line-height:1.7">
+                                <li><strong>SQL</strong> → Banking, ERP, reporting, multi-table relationships</li>
+                                <li><strong>NoSQL</strong> → Real-time feeds, IoT, content management, rapid prototyping</li>
+                            </ul>
+                            <p class="reference-links"><a href="https://www.mongodb.com/nosql-explained/nosql-vs-sql" target="_blank" rel="noreferrer">SQL vs NoSQL guide</a><a href="https://en.wikipedia.org/wiki/CAP_theorem" target="_blank" rel="noreferrer">CAP theorem</a></p>
+                        </div>
+                    </details>
+
                     <details class="topic-card" id="rdbms" data-tags="rdbms relational database management system oracle postgres mysql sql server">
                         <summary><span>RDBMS</span><span>Relational engines with schema, constraints, and SQL</span></summary>
                         <div class="topic-body">
@@ -924,5 +943,6 @@ COMMIT;
     </footer>
 
     <script src="app.js"></script>
+    <script src="demos.js"></script>
 </body>
 </html>
