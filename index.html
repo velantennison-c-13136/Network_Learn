@@ -138,6 +138,9 @@
                     <a class="section-link" href="#infrastructure">Server Infrastructure</a>
                     <div class="sidebar-nav-links">
                         <a href="#web-server">Web Server</a>
+                        <a href="#nginx-server">Nginx</a>
+                        <a href="#apache-server">Apache HTTP Server</a>
+                        <a href="#tomcat-server">Apache Tomcat</a>
                         <a href="#proxy-reverse-proxy">Proxy / Reverse Proxy</a>
                         <a href="#load-balancer">Load Balancer</a>
                         <a href="#firewall">Firewall</a>
@@ -557,6 +560,655 @@ serve static assets
 terminate TLS
 write access logs</code></pre>
                             <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_web_server" target="_blank" rel="noreferrer">Web server basics</a><a href="https://nginx.org/en/docs/" target="_blank" rel="noreferrer">Nginx docs</a></p>
+                        </div>
+                    </details>
+
+
+                    <!-- ══════════ NGINX ══════════ -->
+                    <details class="topic-card" id="nginx-server" data-tags="nginx web server reverse proxy load balancer static files event driven">
+                        <summary><span>Nginx</span><span>High-performance event-driven web server &amp; reverse proxy</span></summary>
+                        <div class="topic-body">
+
+                            <!-- What is it -->
+                            <p><strong>What is Nginx?</strong> Nginx (pronounced "engine-x") is a lightweight, high-performance web server, reverse proxy, and load balancer. It was designed from the ground up to handle thousands of simultaneous connections efficiently.</p>
+
+                            <!-- Key strengths -->
+                            <p><strong>Why it is popular:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li>Non-blocking, event-driven architecture — one worker can handle thousands of connections at once.</li>
+                                <li>Extremely fast at serving static files (HTML, CSS, JS, images).</li>
+                                <li>Widely used as a reverse proxy in front of Node.js, Python, PHP, and Java apps.</li>
+                                <li>Can terminate TLS, compress responses, cache content, and balance load — all in one process.</li>
+                            </ul>
+
+                            <!-- Architecture diagram -->
+                            <div class="server-arch-diagram">
+                                <div class="arch-title">🏗️ How Nginx Works — Architecture</div>
+                                <div class="arch-flow">
+                                    <div class="arch-box arch-client">🌐<br><strong>Client</strong><br><small>Browser / App</small></div>
+                                    <div class="arch-arrow">→<br><small>HTTP/S<br>port 80/443</small></div>
+                                    <div class="arch-box arch-nginx">⚡<br><strong>Nginx</strong><br><small>Master + Workers</small></div>
+                                    <div class="arch-fork">
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-static">📁<br><strong>Static Files</strong><br><small>/var/www/html</small></div>
+                                        </div>
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-app">🖥️<br><strong>App Server</strong><br><small>Node / PHP / Python</small></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="arch-legend">
+                                    <span class="arch-tag">Master process</span> manages worker processes &amp; config reloads.
+                                    <span class="arch-tag">Worker processes</span> handle all connections non-blocking via event loop.
+                                </div>
+                            </div>
+
+                            <!-- Step-by-step request lifecycle -->
+                            <p><strong>Request lifecycle — step by step:</strong></p>
+                            <ol class="server-steps">
+                                <li><strong>Client connects</strong> — Browser opens a TCP connection to Nginx on port 80 or 443.</li>
+                                <li><strong>TLS handshake</strong> — If HTTPS, Nginx terminates TLS using the SSL certificate stored on disk.</li>
+                                <li><strong>Request parsing</strong> — Nginx reads the HTTP request line and headers (e.g., <code>GET /index.html HTTP/1.1</code>).</li>
+                                <li><strong>Location matching</strong> — Nginx checks the config <code>location</code> blocks in order to decide what to do.</li>
+                                <li><strong>Static file? Serve it directly</strong> — If the path maps to a file on disk (e.g., <code>/var/www/html/logo.png</code>), Nginx sends it immediately — no app server needed.</li>
+                                <li><strong>Dynamic request? Proxy it</strong> — If the path needs application logic (e.g., <code>/api/users</code>), Nginx forwards it to an upstream app server via <code>proxy_pass</code>.</li>
+                                <li><strong>Response sent back</strong> — Nginx relays the response to the client, optionally compressing with gzip.</li>
+                                <li><strong>Access log written</strong> — Each request is recorded: IP, URL, status code, response time.</li>
+                            </ol>
+
+                            <!-- Config example -->
+                            <pre><code># Typical Nginx config block
+server {
+    listen 443 ssl;
+    server_name example.com;
+
+    ssl_certificate     /etc/ssl/certs/example.crt;
+    ssl_certificate_key /etc/ssl/private/example.key;
+
+    # Serve static files from disk
+    location /static/ {
+        root /var/www/html;
+        expires 30d;          # browser cache hint
+    }
+
+    # Proxy dynamic requests to Node.js app on port 3000
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}</code></pre>
+
+                            <!-- Comparison table -->
+                            <p><strong>Nginx roles at a glance:</strong></p>
+                            <table>
+                                <thead><tr><th>Role</th><th>What it does</th><th>Example</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Web server</td><td>Serves static HTML, CSS, JS, images</td><td>Landing pages, SPAs</td></tr>
+                                    <tr><td>Reverse proxy</td><td>Forwards requests to an app server</td><td>Node.js, Gunicorn, PHP-FPM</td></tr>
+                                    <tr><td>Load balancer</td><td>Spreads requests across multiple backends</td><td>upstream { server app1; server app2; }</td></tr>
+                                    <tr><td>TLS terminator</td><td>Handles HTTPS, passes plain HTTP upstream</td><td>Offloads crypto from app servers</td></tr>
+                                    <tr><td>Cache</td><td>Stores upstream responses to reduce load</td><td>proxy_cache_path</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p class="reference-links">
+                                <a href="https://nginx.org/en/docs/" target="_blank" rel="noreferrer">Official docs</a>
+                                <a href="https://www.nginx.com/resources/glossary/nginx/" target="_blank" rel="noreferrer">What is Nginx?</a>
+                                <a href="https://nginx.org/en/docs/beginners_guide.html" target="_blank" rel="noreferrer">Beginner's guide</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ══════════ APACHE HTTP SERVER ══════════ -->
+                    <details class="topic-card" id="apache-server" data-tags="apache http server httpd mod_php mod_rewrite virtual host process threaded">
+                        <summary><span>Apache HTTP Server</span><span>The classic, module-driven web server powering millions of sites</span></summary>
+                        <div class="topic-body">
+
+                            <p><strong>What is Apache HTTP Server?</strong> Apache (httpd) is one of the oldest and most widely deployed web servers in the world. It was released in 1995 and is known for its flexibility through a powerful module system.</p>
+
+                            <!-- Key traits -->
+                            <p><strong>Key characteristics:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li>Module-based architecture: add or remove features (PHP, rewrite, auth, SSL) by enabling modules.</li>
+                                <li>Per-directory configuration via <code>.htaccess</code> files — great for shared hosting.</li>
+                                <li>Supports multiple processing models: prefork (one process per request), worker, and event MPM.</li>
+                                <li>Mature ecosystem with decades of documentation and community support.</li>
+                            </ul>
+
+                            <!-- Architecture diagram -->
+                            <div class="server-arch-diagram">
+                                <div class="arch-title">🏗️ How Apache HTTP Server Works — Architecture</div>
+                                <div class="arch-flow">
+                                    <div class="arch-box arch-client">🌐<br><strong>Client</strong><br><small>Browser</small></div>
+                                    <div class="arch-arrow">→<br><small>HTTP/S<br>port 80/443</small></div>
+                                    <div class="arch-box arch-apache">🪶<br><strong>Apache httpd</strong><br><small>MPM + modules</small></div>
+                                    <div class="arch-fork">
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-static">📄<br><strong>mod_php</strong><br><small>PHP runs in-process</small></div>
+                                        </div>
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-app">🔗<br><strong>mod_proxy</strong><br><small>Forward to app/Tomcat</small></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="arch-legend">
+                                    <span class="arch-tag">Prefork MPM</span> — one process per connection (safe for non-thread-safe modules like mod_php).
+                                    <span class="arch-tag">Event MPM</span> — keep-alive connections handled by a dedicated thread, workers freed for active requests.
+                                </div>
+                            </div>
+
+                            <!-- Step-by-step request lifecycle -->
+                            <p><strong>Request lifecycle — step by step:</strong></p>
+                            <ol class="server-steps">
+                                <li><strong>Client connects</strong> — A TCP connection arrives on port 80 or 443.</li>
+                                <li><strong>MPM accepts the connection</strong> — The Multi-Processing Module (prefork/worker/event) assigns a process or thread.</li>
+                                <li><strong>mod_ssl decrypts</strong> — If HTTPS, <code>mod_ssl</code> handles the TLS handshake and decryption.</li>
+                                <li><strong>Request parsing</strong> — Apache reads the HTTP request line, headers, and body.</li>
+                                <li><strong>.htaccess checked</strong> — Apache reads any <code>.htaccess</code> files in the requested directory for per-directory config (rewrites, auth, deny rules).</li>
+                                <li><strong>VirtualHost matched</strong> — Apache compares the <code>Host</code> header to configured virtual hosts, picking the right document root and config.</li>
+                                <li><strong>Handler dispatched</strong> — Apache picks the right module: <code>mod_php</code> for <code>.php</code> files, <code>mod_rewrite</code> for URL transforms, <code>mod_proxy</code> to forward elsewhere.</li>
+                                <li><strong>Content generated</strong> — The module produces a response (HTML, JSON, redirect, etc.).</li>
+                                <li><strong>Response sent</strong> — Apache writes headers and body back to the client. Connection may be kept alive.</li>
+                                <li><strong>Log written</strong> — <code>mod_log_config</code> records the access entry.</li>
+                            </ol>
+
+                            <!-- Config example -->
+                            <pre><code># Apache VirtualHost config example
+&lt;VirtualHost *:443&gt;
+    ServerName example.com
+    DocumentRoot /var/www/example
+
+    SSLEngine on
+    SSLCertificateFile    /etc/ssl/certs/example.crt
+    SSLCertificateKeyFile /etc/ssl/private/example.key
+
+    # URL rewrite: force HTTPS
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Proxy /api to a backend service
+    ProxyPass /api http://localhost:8080/api
+    ProxyPassReverse /api http://localhost:8080/api
+
+    ErrorLog  ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+&lt;/VirtualHost&gt;</code></pre>
+
+                            <!-- Comparison table -->
+                            <p><strong>Apache vs Nginx — quick comparison:</strong></p>
+                            <table>
+                                <thead><tr><th>Feature</th><th>Apache</th><th>Nginx</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Architecture</td><td>Process / thread per connection</td><td>Event-driven (async)</td></tr>
+                                    <tr><td>Static files</td><td>Good</td><td>Faster (benchmark winner)</td></tr>
+                                    <tr><td>Dynamic content</td><td>mod_php runs in-process</td><td>Proxies to external FPM/app</td></tr>
+                                    <tr><td>Config flexibility</td><td>.htaccess per directory</td><td>Centralized config only</td></tr>
+                                    <tr><td>Memory use</td><td>Higher under many connections</td><td>Lower and more predictable</td></tr>
+                                    <tr><td>Best for</td><td>Shared hosting, PHP apps, legacy stacks</td><td>High-traffic, microservices, CDN edge</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p class="reference-links">
+                                <a href="https://httpd.apache.org/docs/" target="_blank" rel="noreferrer">Official docs</a>
+                                <a href="https://httpd.apache.org/docs/current/mod/prefork.html" target="_blank" rel="noreferrer">Prefork MPM</a>
+                                <a href="https://httpd.apache.org/docs/current/vhosts/" target="_blank" rel="noreferrer">VirtualHost guide</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ══════════ APACHE TOMCAT ══════════ -->
+                    <details class="topic-card" id="tomcat-server" data-tags="tomcat java servlet jsp war ear application server java ee jakarta">
+                        <summary><span>Apache Tomcat</span><span>Java Servlet container — runs Java web applications</span></summary>
+                        <div class="topic-body">
+
+                            <p><strong>What is Tomcat?</strong> Apache Tomcat is a Java Servlet and JSP container. Unlike Nginx or Apache httpd which serve general web content, Tomcat is specifically designed to run <strong>Java web applications</strong> packaged as <code>.war</code> files.</p>
+
+                            <!-- Key traits -->
+                            <p><strong>Key concepts to understand:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Servlet:</strong> a Java class that handles HTTP requests and produces responses — the building block of Java web apps.</li>
+                                <li><strong>JSP (JavaServer Pages):</strong> HTML templates with embedded Java code, compiled by Tomcat into servlets.</li>
+                                <li><strong>.war file:</strong> a packaged Java web application (Web Application Archive) — Tomcat deploys these.</li>
+                                <li>Tomcat is <em>not</em> a full Java EE/Jakarta EE server (no EJB support by default) — it is a lightweight servlet container.</li>
+                                <li>Often used behind Nginx or Apache httpd which handle SSL, static files, and load balancing.</li>
+                            </ul>
+
+                            <!-- Architecture diagram -->
+                            <div class="server-arch-diagram">
+                                <div class="arch-title">🏗️ How Tomcat Works — Architecture</div>
+                                <div class="arch-flow tomcat-flow">
+                                    <div class="arch-box arch-client">🌐<br><strong>Client</strong><br><small>Browser</small></div>
+                                    <div class="arch-arrow">→<br><small>HTTP/S</small></div>
+                                    <div class="arch-box arch-nginx" style="background:var(--clr-surface-2,#e8f4f8)">🪶<br><strong>Nginx/Apache</strong><br><small>SSL + static files</small></div>
+                                    <div class="arch-arrow">→<br><small>AJP or HTTP<br>port 8009/8080</small></div>
+                                    <div class="arch-box arch-tomcat">☕<br><strong>Tomcat</strong><br><small>Servlet Container</small></div>
+                                    <div class="arch-fork">
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-app">📦<br><strong>app.war</strong><br><small>Java Servlets / JSP</small></div>
+                                        </div>
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-db">🗄️<br><strong>Database</strong><br><small>via JDBC</small></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="arch-legend">
+                                    <span class="arch-tag">Connector</span> listens for requests (HTTP on 8080, AJP on 8009 from Apache httpd).
+                                    <span class="arch-tag">Engine → Host → Context</span> routes the request to the right web application.
+                                    <span class="arch-tag">Servlet</span> executes business logic and returns a response.
+                                </div>
+                            </div>
+
+                            <!-- Tomcat internal structure -->
+                            <div class="server-arch-diagram" style="margin-top:1rem">
+                                <div class="arch-title">🔍 Tomcat Internal Structure</div>
+                                <div class="tomcat-internals">
+                                    <div class="tc-box tc-server">🖥️ Server
+                                        <div class="tc-box tc-service">⚙️ Service
+                                            <div class="tc-box tc-connector">🔌 Connector (HTTP :8080 / AJP :8009)</div>
+                                            <div class="tc-box tc-engine">🔧 Engine (Catalina)
+                                                <div class="tc-box tc-host">🏠 Virtual Host (localhost)
+                                                    <div class="tc-box tc-context">📦 Context (/myapp → app.war)
+                                                        <div class="tc-box tc-servlet">☕ Servlet / JSP</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step-by-step request lifecycle -->
+                            <p><strong>Request lifecycle — step by step:</strong></p>
+                            <ol class="server-steps">
+                                <li><strong>Client sends HTTP request</strong> — e.g., <code>GET /myapp/products HTTP/1.1</code>.</li>
+                                <li><strong>Nginx/Apache receives it</strong> — handles TLS, then forwards to Tomcat via HTTP proxy or AJP connector on port 8080/8009.</li>
+                                <li><strong>Tomcat Connector accepts</strong> — the Coyote HTTP connector (or AJP connector) reads the request.</li>
+                                <li><strong>Engine routes to Host</strong> — Catalina Engine finds the correct virtual host (e.g., <code>localhost</code>).</li>
+                                <li><strong>Host routes to Context</strong> — maps the URL path to a deployed <code>.war</code> application (e.g., <code>/myapp</code> → <code>myapp.war</code>).</li>
+                                <li><strong>Servlet selected by URL pattern</strong> — the web.xml or annotation mapping matches <code>/products</code> to a specific Java Servlet class.</li>
+                                <li><strong>Servlet executes</strong> — the <code>doGet()</code> or <code>doPost()</code> method runs: reads data from a DB via JDBC, applies business logic.</li>
+                                <li><strong>Response committed</strong> — Servlet writes back HTML, JSON, or XML via the <code>HttpServletResponse</code>.</li>
+                                <li><strong>Tomcat returns to Nginx/Apache</strong> — which relays it to the client.</li>
+                                <li><strong>Session managed</strong> — If stateful, Tomcat tracks the session in memory or a shared session store.</li>
+                            </ol>
+
+                            <!-- ── AJP Deep-Dive ── -->
+                            <div class="server-arch-diagram" style="margin-top:1rem">
+                                <div class="arch-title">🔌 What is AJP? (Apache JServ Protocol)</div>
+                                <p style="margin:0.6rem 0 0.5rem;font-size:0.95rem">
+                                    <strong>AJP (Apache JServ Protocol)</strong> is a binary protocol that allows a front-end web server
+                                    (like Apache httpd) to communicate with Tomcat behind the scenes — more efficiently than plain HTTP.
+                                </p>
+                                <div class="arch-flow" style="flex-wrap:wrap;gap:0.7rem;margin:0.7rem 0">
+                                    <div class="arch-box arch-client">🌐<br><strong>Browser</strong><br><small>HTTPS :443</small></div>
+                                    <div class="arch-arrow">→</div>
+                                    <div class="arch-box arch-apache">🪶<br><strong>Apache httpd</strong><br><small>mod_jk / mod_proxy_ajp</small></div>
+                                    <div class="arch-arrow">→<br><small style="color:#e65100">AJP binary<br>port 8009</small></div>
+                                    <div class="arch-box arch-tomcat">☕<br><strong>Tomcat</strong><br><small>AJP Connector</small></div>
+                                    <div class="arch-arrow">→</div>
+                                    <div class="arch-box arch-app">📦<br><strong>Servlet</strong><br><small>doGet / doPost</small></div>
+                                </div>
+
+                                <p style="font-size:0.9rem;margin:0.4rem 0 0.6rem"><strong>AJP vs HTTP — why use AJP?</strong></p>
+                                <table>
+                                    <thead><tr><th>Aspect</th><th>AJP (port 8009)</th><th>HTTP proxy (port 8080)</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Format</td><td>Binary (compact packets)</td><td>Plain text headers</td></tr>
+                                        <tr><td>Performance</td><td>Slightly faster, lower overhead</td><td>Slightly more overhead</td></tr>
+                                        <tr><td>Keep-alive</td><td>Built-in persistent connections</td><td>Via HTTP keep-alive</td></tr>
+                                        <tr><td>Remote IP passthrough</td><td>Automatic — Tomcat sees real client IP</td><td>Needs <code>X-Forwarded-For</code> header</td></tr>
+                                        <tr><td>Security risk</td><td>⚠️ CVE-2020-1938 "Ghostcat" — must secure</td><td>Standard HTTP security applies</td></tr>
+                                        <tr><td>Modern recommendation</td><td>Disable if not needed; use secret</td><td>Preferred for simplicity &amp; safety</td></tr>
+                                    </tbody>
+                                </table>
+
+                                <p style="margin:0.6rem 0 0.3rem;font-size:0.9rem"><strong>⚠️ Ghostcat (CVE-2020-1938) — Critical AJP vulnerability:</strong></p>
+                                <ul style="margin:0;padding-left:1.4rem;line-height:1.8;font-size:0.9rem">
+                                    <li>An attacker could read any file from the web application root via AJP — including <code>WEB-INF/web.xml</code>.</li>
+                                    <li>Also allowed remote code execution if file upload was possible.</li>
+                                    <li><strong>Fix:</strong> Set <code>requiredSecret</code> on the AJP Connector, or disable AJP entirely if not used.</li>
+                                </ul>
+                            </div>
+
+                            <!-- ── Full server.xml config ── -->
+                            <p style="margin-top:1.2rem"><strong>📄 server.xml — Full configuration:</strong></p>
+                            <pre><code>&lt;!-- ═══════════════════════════════════════
+     conf/server.xml — Tomcat's main config
+     ═══════════════════════════════════════ --&gt;
+
+&lt;!-- Server: the top-level element.
+     port 8005 = admin shutdown port (change or disable in production!) --&gt;
+&lt;Server port="8005" shutdown="SHUTDOWN"&gt;
+
+  &lt;!-- Listeners: hook into Tomcat lifecycle events --&gt;
+  &lt;Listener className="org.apache.catalina.startup.VersionLoggerListener" /&gt;
+  &lt;Listener className="org.apache.catalina.core.AprLifecycleListener"
+            SSLEngine="on" /&gt;
+  &lt;Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" /&gt;
+  &lt;Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" /&gt;
+
+  &lt;!-- Global JNDI Resources (e.g., shared JDBC connection pools) --&gt;
+  &lt;GlobalNamingResources&gt;
+    &lt;Resource name="UserDatabase"
+              auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database for authentication"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" /&gt;
+  &lt;/GlobalNamingResources&gt;
+
+  &lt;Service name="Catalina"&gt;
+
+    &lt;!-- ── HTTP Connector ─────────────────────────────── --&gt;
+    &lt;!-- Listens on port 8080 for direct HTTP traffic     --&gt;
+    &lt;Connector port="8080"
+               protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443"
+               maxThreads="200"
+               minSpareThreads="10"
+               maxConnections="8192"
+               URIEncoding="UTF-8"
+               compression="on"
+               compressionMinSize="2048"
+               server="Apache" /&gt;
+               &lt;!-- server="" hides Tomcat version from headers --&gt;
+
+    &lt;!-- ── HTTPS Connector (direct SSL, no front-end proxy) ── --&gt;
+    &lt;!-- Only needed if Tomcat terminates TLS itself           --&gt;
+    &lt;Connector port="8443"
+               protocol="org.apache.coyote.http11.Http11NioProtocol"
+               SSLEnabled="true"
+               maxThreads="150"
+               scheme="https" secure="true"
+               keystoreFile="conf/keystore.jks"
+               keystorePass="changeit"
+               clientAuth="false"
+               sslProtocol="TLS" /&gt;
+
+    &lt;!-- ── AJP Connector ─────────────────────────────── --&gt;
+    &lt;!-- Used when Apache httpd sits in front via mod_jk  --&gt;
+    &lt;!-- ⚠️ Always bind to loopback (127.0.0.1) only!    --&gt;
+    &lt;Connector protocol="AJP/1.3"
+               address="127.0.0.1"
+               port="8009"
+               redirectPort="8443"
+               secretRequired="true"
+               secret="my-ajp-secret-key"
+               tomcatAuthentication="false" /&gt;
+               &lt;!-- tomcatAuthentication=false: trust Apache's auth --&gt;
+               &lt;!-- Disable entirely if not using Apache httpd:
+               comment out the Connector element above --&gt;
+
+    &lt;!-- ── Engine ────────────────────────────────────── --&gt;
+    &lt;Engine name="Catalina" defaultHost="localhost"&gt;
+
+      &lt;!-- Realm: how Tomcat authenticates users          --&gt;
+      &lt;!-- LockOut wraps another realm to prevent brute force --&gt;
+      &lt;Realm className="org.apache.catalina.realm.LockOutRealm"&gt;
+        &lt;!-- UserDatabase Realm: reads from tomcat-users.xml --&gt;
+        &lt;Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase" /&gt;
+        &lt;!-- Or use a JDBC Realm (database-backed auth): --&gt;
+        &lt;!--
+        &lt;Realm className="org.apache.catalina.realm.JDBCRealm"
+               driverName="com.mysql.jdbc.Driver"
+               connectionURL="jdbc:mysql://localhost/tomcat?user=db&amp;password=pass"
+               userTable="users" userNameCol="username" userCredCol="password_hash"
+               userRoleTable="user_roles" roleNameCol="role_name" /&gt;
+        --&gt;
+      &lt;/Realm&gt;
+
+      &lt;!-- ── Virtual Host ─────────────────────────────── --&gt;
+      &lt;Host name="localhost"
+            appBase="webapps"
+            unpackWARs="true"
+            autoDeploy="true"
+            deployOnStartup="true"&gt;
+
+        &lt;!-- Access log valve: records every request --&gt;
+        &lt;Valve className="org.apache.catalina.valves.AccessLogValve"
+               directory="logs"
+               prefix="localhost_access_log"
+               suffix=".txt"
+               pattern="%h %l %u %t &amp;quot;%r&amp;quot; %s %b %D ms" /&gt;
+
+        &lt;!-- RemoteAddr Valve: IP whitelist / blacklist --&gt;
+        &lt;Valve className="org.apache.catalina.valves.RemoteAddrValve"
+               allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1"
+               denyStatus="403" /&gt;
+
+        &lt;!-- Explicit Context: override defaults for one app --&gt;
+        &lt;Context path="/myapp"
+                 docBase="/opt/apps/myapp.war"
+                 reloadable="false"
+                 crossContext="false"
+                 sessionCookieHttpOnly="true"
+                 sessionCookieSecure="true"&gt;
+
+          &lt;!-- JNDI DataSource for this app --&gt;
+          &lt;Resource name="jdbc/MyDB"
+                    auth="Container"
+                    type="javax.sql.DataSource"
+                    maxTotal="20" maxIdle="10"
+                    maxWaitMillis="10000"
+                    username="dbuser" password="dbpass"
+                    driverClassName="com.mysql.cj.jdbc.Driver"
+                    url="jdbc:mysql://localhost:3306/mydb?useSSL=true" /&gt;
+        &lt;/Context&gt;
+      &lt;/Host&gt;
+    &lt;/Engine&gt;
+  &lt;/Service&gt;
+&lt;/Server&gt;</code></pre>
+
+                            <!-- ── web.xml URL Patterns ── -->
+                            <p style="margin-top:1.2rem"><strong>📄 WEB-INF/web.xml — URL patterns, security, sessions:</strong></p>
+                            <pre><code>&lt;!-- web.xml lives inside your .war under WEB-INF/ --&gt;
+&lt;web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="5.0"&gt;
+
+  &lt;!-- ── Servlet Mapping ─────────────────────── --&gt;
+  &lt;servlet&gt;
+    &lt;servlet-name&gt;ProductServlet&lt;/servlet-name&gt;
+    &lt;servlet-class&gt;com.example.ProductServlet&lt;/servlet-class&gt;
+    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
+  &lt;/servlet&gt;
+  &lt;servlet-mapping&gt;
+    &lt;servlet-name&gt;ProductServlet&lt;/servlet-name&gt;
+    &lt;url-pattern&gt;/products/*&lt;/url-pattern&gt;
+    &lt;!-- Matches: /products/, /products/42, /products/search --&gt;
+  &lt;/servlet-mapping&gt;
+
+  &lt;!-- ── Filters ──────────────────────────────── --&gt;
+  &lt;filter&gt;
+    &lt;filter-name&gt;AuthFilter&lt;/filter-name&gt;
+    &lt;filter-class&gt;com.example.AuthFilter&lt;/filter-class&gt;
+  &lt;/filter&gt;
+  &lt;filter-mapping&gt;
+    &lt;filter-name&gt;AuthFilter&lt;/filter-name&gt;
+    &lt;url-pattern&gt;/admin/*&lt;/url-pattern&gt;
+  &lt;/filter-mapping&gt;
+
+  &lt;!-- ── Session Config ───────────────────────── --&gt;
+  &lt;session-config&gt;
+    &lt;session-timeout&gt;30&lt;/session-timeout&gt;  &lt;!-- minutes --&gt;
+    &lt;cookie-config&gt;
+      &lt;http-only&gt;true&lt;/http-only&gt;    &lt;!-- no JS access --&gt;
+      &lt;secure&gt;true&lt;/secure&gt;           &lt;!-- HTTPS only --&gt;
+      &lt;same-site&gt;Strict&lt;/same-site&gt;  &lt;!-- CSRF protection --&gt;
+    &lt;/cookie-config&gt;
+    &lt;tracking-mode&gt;COOKIE&lt;/tracking-mode&gt;
+  &lt;/session-config&gt;
+
+  &lt;!-- ── Security Constraints ─────────────────── --&gt;
+  &lt;security-constraint&gt;
+    &lt;web-resource-collection&gt;
+      &lt;web-resource-name&gt;Admin area&lt;/web-resource-name&gt;
+      &lt;url-pattern&gt;/admin/*&lt;/url-pattern&gt;
+      &lt;http-method&gt;GET&lt;/http-method&gt;
+      &lt;http-method&gt;POST&lt;/http-method&gt;
+    &lt;/web-resource-collection&gt;
+    &lt;auth-constraint&gt;
+      &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/auth-constraint&gt;
+    &lt;!-- Force HTTPS for this protected area --&gt;
+    &lt;user-data-constraint&gt;
+      &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+    &lt;/user-data-constraint&gt;
+  &lt;/security-constraint&gt;
+
+  &lt;!-- Login configuration --&gt;
+  &lt;login-config&gt;
+    &lt;auth-method&gt;FORM&lt;/auth-method&gt;
+    &lt;form-login-config&gt;
+      &lt;form-login-page&gt;/login.jsp&lt;/form-login-page&gt;
+      &lt;form-error-page&gt;/login-error.jsp&lt;/form-error-page&gt;
+    &lt;/form-login-config&gt;
+  &lt;/login-config&gt;
+
+  &lt;!-- ── Error pages ─────────────────────────── --&gt;
+  &lt;error-page&gt;
+    &lt;error-code&gt;404&lt;/error-code&gt;
+    &lt;location&gt;/WEB-INF/views/404.jsp&lt;/location&gt;
+  &lt;/error-page&gt;
+  &lt;error-page&gt;
+    &lt;exception-type&gt;java.lang.Exception&lt;/exception-type&gt;
+    &lt;location&gt;/WEB-INF/views/error.jsp&lt;/location&gt;
+  &lt;/error-page&gt;
+
+  &lt;!-- ── JNDI Lookup in web.xml ─────────────── --&gt;
+  &lt;resource-ref&gt;
+    &lt;res-ref-name&gt;jdbc/MyDB&lt;/res-ref-name&gt;
+    &lt;res-type&gt;javax.sql.DataSource&lt;/res-type&gt;
+    &lt;res-auth&gt;Container&lt;/res-auth&gt;
+  &lt;/resource-ref&gt;
+
+&lt;/web-app&gt;</code></pre>
+
+                            <!-- ── Java Servlet example ── -->
+                            <p style="margin-top:1.2rem"><strong>☕ Java Servlet — example:</strong></p>
+                            <pre><code>// Annotation maps this servlet to URL pattern /products/*
+@WebServlet(
+    name = "ProductServlet",
+    urlPatterns = {"/products", "/products/*"},
+    loadOnStartup = 1          // load at startup, don't wait for first request
+)
+public class ProductServlet extends HttpServlet {
+
+    private ProductService service;
+
+    @Override
+    public void init() throws ServletException {
+        // Runs ONCE when servlet is first loaded
+        // Look up a JDBC DataSource from Tomcat's JNDI context
+        try {
+            Context ctx = new InitialContext();
+            DataSource ds = (DataSource) ctx.lookup("java:comp/env/jdbc/MyDB");
+            this.service = new ProductService(ds);
+        } catch (NamingException e) {
+            throw new ServletException("JNDI lookup failed", e);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req,
+                         HttpServletResponse res)
+            throws ServletException, IOException {
+
+        String id = req.getPathInfo();          // e.g. /42
+        String format = req.getParameter("fmt"); // e.g. ?fmt=json
+
+        // Security: check session / role
+        HttpSession session = req.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            res.sendRedirect(req.getContextPath() + "/login.jsp");
+            return;
+        }
+
+        // Fetch data
+        Product product = service.findById(id);
+
+        // Respond: JSON or HTML
+        if ("json".equalsIgnoreCase(format)) {
+            res.setContentType("application/json;charset=UTF-8");
+            res.getWriter().println(product.toJson());
+        } else {
+            req.setAttribute("product", product);
+            req.getRequestDispatcher("/WEB-INF/views/product.jsp")
+               .forward(req, res);     // forward to JSP for rendering
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req,
+                          HttpServletResponse res)
+            throws ServletException, IOException {
+        // Parse body parameters
+        String name  = req.getParameter("name");
+        String price = req.getParameter("price");
+
+        // CSRF token validation example
+        String csrfToken  = req.getParameter("_csrf");
+        String sessionToken = (String) req.getSession().getAttribute("csrfToken");
+        if (!csrfToken.equals(sessionToken)) {
+            res.sendError(403, "CSRF validation failed");
+            return;
+        }
+
+        service.create(name, Double.parseDouble(price));
+        res.sendRedirect(req.getContextPath() + "/products");
+    }
+
+    @Override
+    public void destroy() {
+        // Runs ONCE when servlet is unloaded (app undeploy / restart)
+        service.close();
+    }
+}</code></pre>
+
+                            <!-- ── Security hardening table ── -->
+                            <p style="margin-top:1.2rem"><strong>🔒 Tomcat Security Hardening — quick checklist:</strong></p>
+                            <table>
+                                <thead><tr><th>Area</th><th>Risk</th><th>How to fix</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Shutdown port 8005</td><td>Anyone on the host can shutdown Tomcat</td><td>Change <code>port="-1"</code> or firewall 8005</td></tr>
+                                    <tr><td>AJP connector</td><td>Ghostcat (CVE-2020-1938)</td><td>Bind to <code>127.0.0.1</code>, set <code>secret</code>, or disable AJP entirely</td></tr>
+                                    <tr><td>Server version header</td><td>Reveals Tomcat version</td><td>Set <code>server=""</code> on Connector; remove <code>ServerInfo.properties</code></td></tr>
+                                    <tr><td>Manager &amp; Host-Manager apps</td><td>Remote deployment if password is weak</td><td>Remove from webapps/ in production, or IP-restrict via <code>RemoteAddrValve</code></td></tr>
+                                    <tr><td>Default ROOT app</td><td>Exposes Tomcat default page</td><td>Replace or remove <code>webapps/ROOT/</code></td></tr>
+                                    <tr><td>Session fixation</td><td>Attacker reuses session ID</td><td>Call <code>req.changeSessionId()</code> on login</td></tr>
+                                    <tr><td>Directory listing</td><td>Exposes file tree</td><td>Set <code>listings="false"</code> in DefaultServlet init-param</td></tr>
+                                    <tr><td>HTTPS</td><td>Credentials in plain text</td><td>Use <code>CONFIDENTIAL</code> transport guarantee in web.xml or terminate at Nginx</td></tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Comparison table -->
+                            <p><strong>Nginx vs Apache vs Tomcat — at a glance:</strong></p>
+                            <table>
+                                <thead><tr><th>Feature</th><th>Nginx</th><th>Apache httpd</th><th>Tomcat</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Primary purpose</td><td>Web server / reverse proxy</td><td>Web server / module host</td><td>Java Servlet container</td></tr>
+                                    <tr><td>Language support</td><td>Any via proxy</td><td>PHP (native), any via proxy</td><td>Java only (native)</td></tr>
+                                    <tr><td>Static files</td><td>⭐⭐⭐ Excellent</td><td>⭐⭐ Good</td><td>⭐ Possible but not ideal</td></tr>
+                                    <tr><td>Dynamic content</td><td>Via upstream proxy</td><td>mod_php in-process or proxy</td><td>Native Java Servlets &amp; JSP</td></tr>
+                                    <tr><td>Default port</td><td>80 / 443</td><td>80 / 443</td><td>8080 / 8443</td></tr>
+                                    <tr><td>Deployment unit</td><td>Config file</td><td>Config + .htaccess</td><td>.war file</td></tr>
+                                    <tr><td>Typical stack</td><td>LEMP, microservices edge</td><td>LAMP stack</td><td>Java / Spring Boot / JSF</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p class="reference-links">
+                                <a href="https://tomcat.apache.org/tomcat-10.1-doc/index.html" target="_blank" rel="noreferrer">Official Tomcat docs</a>
+                                <a href="https://tomcat.apache.org/tomcat-10.1-doc/architecture/overview.html" target="_blank" rel="noreferrer">Architecture overview</a>
+                                <a href="https://jakarta.ee/specifications/servlet/" target="_blank" rel="noreferrer">Jakarta Servlet spec</a>
+                            </p>
                         </div>
                     </details>
 

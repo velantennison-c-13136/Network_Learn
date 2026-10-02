@@ -2054,4 +2054,378 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /* ═══════════════════════════════════════════════════
+       NGINX INTERACTIVE DEMO
+       ═══════════════════════════════════════════════════ */
+
+    createDemo('nginx-server', `
+        <p class="demo-desc">Click <strong>▶ Send Request</strong> to watch a browser request travel through Nginx step by step. Toggle the URL to see how Nginx decides what to do.</p>
+
+        <div class="demo-controls">
+            <label class="demo-radio"><input type="radio" name="nginx-url" value="static" checked> /static/logo.png (Static File)</label>
+            <label class="demo-radio"><input type="radio" name="nginx-url" value="api"> /api/users (Dynamic API)</label>
+            <label class="demo-radio"><input type="radio" name="nginx-url" value="redirect"> /old-page (Redirect)</label>
+        </div>
+
+        <div class="server-demo-flow" id="nginx-flow">
+            <div class="server-demo-step" id="nginx-s1">
+                <span class="step-icon">🌐</span>
+                <span class="step-label">1. Client connects on port 443 (HTTPS)</span>
+                <span class="step-detail">TCP + TLS handshake begins</span>
+            </div>
+            <div class="server-demo-step" id="nginx-s2">
+                <span class="step-icon">🔒</span>
+                <span class="step-label">2. Nginx terminates TLS</span>
+                <span class="step-detail">Decrypts using ssl_certificate on disk</span>
+            </div>
+            <div class="server-demo-step" id="nginx-s3">
+                <span class="step-icon">📋</span>
+                <span class="step-label">3. HTTP request parsed</span>
+                <span class="step-detail" id="nginx-url-display">GET /static/logo.png HTTP/1.1</span>
+            </div>
+            <div class="server-demo-step" id="nginx-s4">
+                <span class="step-icon">🗺️</span>
+                <span class="step-label">4. Location block matched</span>
+                <span class="step-detail" id="nginx-location-display">location /static/ { root /var/www/html; }</span>
+            </div>
+            <div class="server-demo-step" id="nginx-s5">
+                <span class="step-icon" id="nginx-s5-icon">📁</span>
+                <span class="step-label" id="nginx-s5-label">5. Static file served directly from disk</span>
+                <span class="step-detail" id="nginx-s5-detail">No app server needed — fast!</span>
+            </div>
+            <div class="server-demo-step" id="nginx-s6">
+                <span class="step-icon">📝</span>
+                <span class="step-label">6. Access log written</span>
+                <span class="step-detail" id="nginx-log-line">127.0.0.1 - GET /static/logo.png 200</span>
+            </div>
+        </div>
+
+        <div class="demo-log" id="nginx-demo-log"></div>
+        <button class="demo-btn" id="nginx-demo-btn">▶ Send Request</button>
+    `);
+
+    // Update labels when URL type changes
+    document.querySelectorAll('input[name="nginx-url"]').forEach(r => {
+        r.addEventListener('change', () => {
+            const v = document.querySelector('input[name="nginx-url"]:checked').value;
+            const urlMap = {
+                static: 'GET /static/logo.png HTTP/1.1',
+                api:    'GET /api/users HTTP/1.1',
+                redirect: 'GET /old-page HTTP/1.1'
+            };
+            const locMap = {
+                static:   'location /static/ { root /var/www/html; expires 30d; }',
+                api:      'location /api/ { proxy_pass http://localhost:3000; }',
+                redirect: 'location /old-page { return 301 /new-page; }'
+            };
+            const s5Map = {
+                static:   { icon: '📁', label: '5. Static file served directly from disk', detail: 'No app server needed — extremely fast!' },
+                api:      { icon: '🔁', label: '5. Request proxied upstream to Node.js :3000', detail: 'proxy_pass forwards to backend app server' },
+                redirect: { icon: '↩️', label: '5. Nginx returns 301 Redirect immediately', detail: 'Client is told to go to /new-page — no backend needed' }
+            };
+            const logMap = {
+                static:   '127.0.0.1 - GET /static/logo.png 200 12843ms',
+                api:      '127.0.0.1 - GET /api/users 200 84ms (proxied)',
+                redirect: '127.0.0.1 - GET /old-page 301 0ms (redirect)'
+            };
+            document.getElementById('nginx-url-display').textContent = urlMap[v];
+            document.getElementById('nginx-location-display').textContent = locMap[v];
+            document.getElementById('nginx-s5-icon').textContent = s5Map[v].icon;
+            document.getElementById('nginx-s5-label').textContent = s5Map[v].label;
+            document.getElementById('nginx-s5-detail').textContent = s5Map[v].detail;
+            document.getElementById('nginx-log-line').textContent = logMap[v];
+        });
+    });
+
+    const nginxBtn = document.getElementById('nginx-demo-btn');
+    if (nginxBtn) {
+        nginxBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            const log = document.getElementById('nginx-demo-log');
+            log.innerHTML = '';
+            const steps = ['nginx-s1','nginx-s2','nginx-s3','nginx-s4','nginx-s5','nginx-s6'];
+            const msgs = [
+                '🌐 Browser opens TCP connection → TLS ClientHello sent to Nginx on :443',
+                '🔒 Nginx reads ssl_certificate, completes TLS handshake → channel encrypted',
+                '📋 Nginx reads HTTP request line + Host header from decrypted stream',
+                '🗺️ Nginx evaluates server{} and location{} blocks top-to-bottom — first match wins',
+                (() => {
+                    const v = document.querySelector('input[name="nginx-url"]:checked').value;
+                    if (v === 'static') return '📁 File found on disk → Nginx sends bytes directly, sets Cache-Control header';
+                    if (v === 'api')    return '🔁 proxy_pass: Nginx opens connection to localhost:3000 and relays the request';
+                    return '↩️ return 301: Nginx writes Location: /new-page header and closes with 301 status';
+                })(),
+                '📝 Request logged: IP · method · path · status code · response time'
+            ];
+            for (let i = 0; i < steps.length; i++) {
+                const el = document.getElementById(steps[i]);
+                el.classList.add('sds-active');
+                log.innerHTML += `<div class="demo-log-line">${msgs[i]}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(700);
+                el.classList.remove('sds-active');
+                el.classList.add('sds-done');
+            }
+            await sleep(400);
+            steps.forEach(id => document.getElementById(id).classList.remove('sds-done'));
+            this.disabled = false;
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════
+       APACHE HTTP SERVER INTERACTIVE DEMO
+       ═══════════════════════════════════════════════════ */
+
+    createDemo('apache-server', `
+        <p class="demo-desc">Choose an <strong>MPM (processing model)</strong> and click a request type to watch Apache route and handle it.</p>
+
+        <div class="demo-controls" style="margin-bottom:0.5rem">
+            <strong style="font-size:0.85rem">MPM:</strong>
+            <label class="demo-radio"><input type="radio" name="apache-mpm" value="prefork" checked> Prefork (1 process/request)</label>
+            <label class="demo-radio"><input type="radio" name="apache-mpm" value="event"> Event (thread pool)</label>
+        </div>
+
+        <div class="demo-controls">
+            <strong style="font-size:0.85rem">Request:</strong>
+            <button class="demo-btn demo-btn-xs" id="apache-php-btn">🐘 PHP Page</button>
+            <button class="demo-btn demo-btn-xs" id="apache-static-btn">📄 Static HTML</button>
+            <button class="demo-btn demo-btn-xs" id="apache-proxy-btn">🔗 Proxy to Tomcat</button>
+        </div>
+
+        <div class="server-demo-flow" id="apache-flow">
+            <div class="server-demo-step" id="apache-s1">
+                <span class="step-icon">🌐</span>
+                <span class="step-label">1. Client connects on port 80 / 443</span>
+                <span class="step-detail" id="apache-mpm-label">Prefork MPM assigns a dedicated child process</span>
+            </div>
+            <div class="server-demo-step" id="apache-s2">
+                <span class="step-icon">🔒</span>
+                <span class="step-label">2. mod_ssl decrypts (if HTTPS)</span>
+                <span class="step-detail">TLS handled by mod_ssl module</span>
+            </div>
+            <div class="server-demo-step" id="apache-s3">
+                <span class="step-icon">📁</span>
+                <span class="step-label">3. .htaccess files checked</span>
+                <span class="step-detail">Per-directory overrides: rewrites, auth, deny rules</span>
+            </div>
+            <div class="server-demo-step" id="apache-s4">
+                <span class="step-icon">🏠</span>
+                <span class="step-label">4. VirtualHost matched by Host header</span>
+                <span class="step-detail">DocumentRoot and config determined</span>
+            </div>
+            <div class="server-demo-step" id="apache-s5">
+                <span class="step-icon" id="apache-s5-icon">🐘</span>
+                <span class="step-label" id="apache-s5-label">5. mod_php executes PHP in-process</span>
+                <span class="step-detail" id="apache-s5-detail">No external process — PHP runs inside Apache worker</span>
+            </div>
+            <div class="server-demo-step" id="apache-s6">
+                <span class="step-icon">📤</span>
+                <span class="step-label">6. Response sent; access log written</span>
+                <span class="step-detail" id="apache-log-line">example.com - GET /index.php 200 combined</span>
+            </div>
+        </div>
+
+        <div class="demo-log" id="apache-demo-log"></div>
+    `);
+
+    // MPM label update
+    document.querySelectorAll('input[name="apache-mpm"]').forEach(r => {
+        r.addEventListener('change', () => {
+            const v = r.value;
+            document.getElementById('apache-mpm-label').textContent =
+                v === 'prefork'
+                    ? 'Prefork MPM: one dedicated child process per connection'
+                    : 'Event MPM: thread pool — keep-alive connections offloaded to a dedicated thread';
+        });
+    });
+
+    async function runApacheDemo(type) {
+        const log = document.getElementById('apache-demo-log');
+        log.innerHTML = '';
+        const steps = ['apache-s1','apache-s2','apache-s3','apache-s4','apache-s5','apache-s6'];
+        const mpm = document.querySelector('input[name="apache-mpm"]:checked').value;
+
+        const configs = {
+            php: {
+                icon: '🐘', label: '5. mod_php executes PHP in-process',
+                detail: 'No external process — PHP runs inside Apache worker',
+                log: 'example.com - GET /index.php 200 42ms'
+            },
+            static: {
+                icon: '📄', label: '5. Static handler reads file from DocumentRoot',
+                detail: 'default_handler sends bytes directly — very fast',
+                log: 'example.com - GET /about.html 200 3ms'
+            },
+            proxy: {
+                icon: '🔗', label: '5. mod_proxy forwards to Tomcat on :8009 (AJP)',
+                detail: 'AJP connector passes request to Tomcat servlet container',
+                log: 'example.com - GET /app/hello 200 88ms (via AJP)'
+            }
+        };
+
+        const cfg = configs[type];
+        document.getElementById('apache-s5-icon').textContent = cfg.icon;
+        document.getElementById('apache-s5-label').textContent = cfg.label;
+        document.getElementById('apache-s5-detail').textContent = cfg.detail;
+        document.getElementById('apache-log-line').textContent = cfg.log;
+
+        const msgs = [
+            `🌐 TCP connection accepted → ${mpm === 'prefork' ? 'child process spawned (Prefork)' : 'thread assigned from pool (Event MPM)'}`,
+            '🔒 mod_ssl completes TLS handshake — request decrypted',
+            '📁 Apache walks directory tree checking for .htaccess overrides — rewrites applied',
+            '🏠 Host header matched to VirtualHost → DocumentRoot = /var/www/example',
+            `${cfg.icon} ${cfg.label.slice(3)}`,
+            `📤 Response written to socket → ${cfg.log}`
+        ];
+
+        for (let i = 0; i < steps.length; i++) {
+            const el = document.getElementById(steps[i]);
+            el.classList.add('sds-active');
+            log.innerHTML += `<div class="demo-log-line">${msgs[i]}</div>`;
+            log.scrollTop = log.scrollHeight;
+            await sleep(650);
+            el.classList.remove('sds-active');
+            el.classList.add('sds-done');
+        }
+        await sleep(400);
+        steps.forEach(id => document.getElementById(id).classList.remove('sds-done'));
+    }
+
+    ['php','static','proxy'].forEach(type => {
+        const btn = document.getElementById(`apache-${type}-btn`);
+        if (btn) btn.addEventListener('click', () => runApacheDemo(type));
+    });
+
+    /* ═══════════════════════════════════════════════════
+       APACHE TOMCAT INTERACTIVE DEMO
+       ═══════════════════════════════════════════════════ */
+
+    createDemo('tomcat-server', `
+        <p class="demo-desc">Watch a Java web request travel through Tomcat's internal pipeline. Choose a scenario and click <strong>▶ Run Request</strong>.</p>
+
+        <div class="demo-controls">
+            <label class="demo-radio"><input type="radio" name="tomcat-req" value="get" checked> GET /myapp/products</label>
+            <label class="demo-radio"><input type="radio" name="tomcat-req" value="post"> POST /myapp/orders</label>
+            <label class="demo-radio"><input type="radio" name="tomcat-req" value="jsp"> JSP /myapp/report.jsp</label>
+        </div>
+
+        <div class="server-demo-flow" id="tomcat-flow">
+            <div class="server-demo-step" id="tc-s1">
+                <span class="step-icon">🪶</span>
+                <span class="step-label">1. Nginx/Apache forwards to Tomcat Connector</span>
+                <span class="step-detail">AJP on :8009 or HTTP proxy on :8080</span>
+            </div>
+            <div class="server-demo-step" id="tc-s2">
+                <span class="step-icon">🔌</span>
+                <span class="step-label">2. Coyote Connector reads request</span>
+                <span class="step-detail">Builds HttpServletRequest object</span>
+            </div>
+            <div class="server-demo-step" id="tc-s3">
+                <span class="step-icon">🔧</span>
+                <span class="step-label">3. Catalina Engine finds Host → Context</span>
+                <span class="step-detail" id="tc-context-label">localhost → /myapp → myapp.war</span>
+            </div>
+            <div class="server-demo-step" id="tc-s4">
+                <span class="step-icon">🗺️</span>
+                <span class="step-label">4. URL pattern matched to Servlet</span>
+                <span class="step-detail" id="tc-servlet-label">@WebServlet("/products") → ProductServlet.class</span>
+            </div>
+            <div class="server-demo-step" id="tc-s5">
+                <span class="step-icon" id="tc-s5-icon">⚙️</span>
+                <span class="step-label" id="tc-s5-label">5. doGet() executes business logic</span>
+                <span class="step-detail" id="tc-s5-detail">JDBC query to DB → build response</span>
+            </div>
+            <div class="server-demo-step" id="tc-s6">
+                <span class="step-icon">🍪</span>
+                <span class="step-label">6. Session managed (if stateful)</span>
+                <span class="step-detail">JSESSIONID cookie tracks server-side session</span>
+            </div>
+            <div class="server-demo-step" id="tc-s7">
+                <span class="step-icon">📤</span>
+                <span class="step-label">7. HttpServletResponse committed</span>
+                <span class="step-detail" id="tc-response-label">JSON response written back to Nginx/Apache</span>
+            </div>
+        </div>
+
+        <div class="demo-log" id="tc-demo-log"></div>
+        <button class="demo-btn" id="tc-demo-btn">▶ Run Request</button>
+
+        <div class="demo-proxy-notes" style="margin-top:1rem">
+            <p>💡 <strong>Key insight:</strong> Tomcat does <em>not</em> handle TLS or serve static files efficiently. Always put Nginx or Apache in front for production deployments.</p>
+            <p>☕ <strong>WAR deployment:</strong> Drop <code>myapp.war</code> into <code>TOMCAT_HOME/webapps/</code> and Tomcat auto-deploys it. Access at <code>http://host:8080/myapp/</code>.</p>
+        </div>
+    `);
+
+    document.querySelectorAll('input[name="tomcat-req"]').forEach(r => {
+        r.addEventListener('change', () => {
+            const v = r.value;
+            const ctxMap = { get: 'localhost → /myapp → myapp.war', post: 'localhost → /myapp → myapp.war', jsp: 'localhost → /myapp → report.jsp (compiled → Servlet)' };
+            const srvMap = { get: '@WebServlet("/products") → ProductServlet.class', post: '@WebServlet("/orders") → OrderServlet.class', jsp: 'JSP compiled to Servlet by Jasper engine' };
+            const s5Map  = { get: { icon:'⚙️', label:'5. doGet() executes business logic', detail:'SELECT * FROM products via JDBC → JSON response' },
+                             post: { icon:'📝', label:'5. doPost() processes form data', detail:'Validates input, INSERTs order row, returns 201 Created' },
+                             jsp:  { icon:'📜', label:'5. Jasper compiles JSP → Servlet → executes', detail:'HTML template merged with data model → HTML response' } };
+            const rspMap = { get: 'JSON array of products → 200 OK', post: '{"orderId":42,"status":"created"} → 201 Created', jsp: 'HTML page rendered → 200 OK' };
+            document.getElementById('tc-context-label').textContent = ctxMap[v];
+            document.getElementById('tc-servlet-label').textContent = srvMap[v];
+            document.getElementById('tc-s5-icon').textContent = s5Map[v].icon;
+            document.getElementById('tc-s5-label').textContent = s5Map[v].label;
+            document.getElementById('tc-s5-detail').textContent = s5Map[v].detail;
+            document.getElementById('tc-response-label').textContent = rspMap[v];
+        });
+    });
+
+    const tcBtn = document.getElementById('tc-demo-btn');
+    if (tcBtn) {
+        tcBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            const log = document.getElementById('tc-demo-log');
+            log.innerHTML = '';
+            const v = document.querySelector('input[name="tomcat-req"]:checked').value;
+            const steps = ['tc-s1','tc-s2','tc-s3','tc-s4','tc-s5','tc-s6','tc-s7'];
+
+            const msgs = {
+                get: [
+                    '🪶 Nginx proxies GET /myapp/products → Tomcat AJP connector on :8009',
+                    '🔌 Coyote reads AJP packet → creates HttpServletRequest (method=GET, uri=/myapp/products)',
+                    '🔧 Catalina engine: Host=localhost → Context=/myapp matched to deployed myapp.war',
+                    '🗺️ URL pattern /products → ProductServlet.class (from web.xml annotation mapping)',
+                    '⚙️ ProductServlet.doGet() runs: conn = dataSource.getConnection(); rs = stmt.executeQuery("SELECT * FROM products")',
+                    '🍪 Session check: request.getSession(false) → existing JSESSIONID found, session valid',
+                    '📤 response.setContentType("application/json"); writer.write(jsonArray); → 200 OK sent back'
+                ],
+                post: [
+                    '🪶 Nginx proxies POST /myapp/orders with JSON body → Tomcat on :8080',
+                    '🔌 Coyote reads HTTP/1.1 packet → creates HttpServletRequest (method=POST, body=JSON)',
+                    '🔧 Catalina: Host=localhost → Context=/myapp → OrderServlet.class selected',
+                    '🗺️ URL pattern /orders matched → OrderServlet.doPost() will handle',
+                    '📝 doPost(): validate JSON → INSERT INTO orders (…) VALUES (…) via PreparedStatement',
+                    '🍪 New session created for authenticated user → JSESSIONID cookie set in response',
+                    '📤 res.setStatus(201); res.setHeader("Location","/myapp/orders/42"); → 201 Created'
+                ],
+                jsp: [
+                    '🪶 Nginx proxy_pass GET /myapp/report.jsp → Tomcat HTTP connector on :8080',
+                    '🔌 Coyote builds HttpServletRequest for JSP file request',
+                    '🔧 Catalina finds Context /myapp → locates report.jsp in webapp directory',
+                    '🗺️ Jasper engine checks if report.jsp is compiled → first time: compile to report_jsp.class',
+                    '📜 report_jsp (Servlet) executes: queries DB, sets pageContext attrs, renders HTML template',
+                    '🍪 Session attributes (username, role) injected into page context for personalisation',
+                    '📤 Full HTML page written to response → 200 OK → Nginx streams to client browser'
+                ]
+            };
+
+            for (let i = 0; i < steps.length; i++) {
+                const el = document.getElementById(steps[i]);
+                el.classList.add('sds-active');
+                log.innerHTML += `<div class="demo-log-line">${msgs[v][i]}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(700);
+                el.classList.remove('sds-active');
+                el.classList.add('sds-done');
+            }
+            await sleep(400);
+            steps.forEach(id => document.getElementById(id).classList.remove('sds-done'));
+            this.disabled = false;
+        });
+    }
+
 });

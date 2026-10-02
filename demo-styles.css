@@ -1506,6 +1506,299 @@ tr.demo-node-active td {
     box-shadow: 0 0 16px rgba(248, 113, 113, 0.3);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Server Architecture Diagram Styles (Nginx / Apache / Tomcat)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Server Steps (numbered list) ── */
+.server-steps {
+    margin: 0.4rem 0 1rem;
+    padding-left: 1.3rem;
+    line-height: 2;
+    counter-reset: step;
+    list-style: none;
+}
+
+.server-steps li {
+    position: relative;
+    padding: 0.35rem 0.5rem 0.35rem 2.2rem;
+    border-radius: 8px;
+    transition: background 200ms;
+    counter-increment: step;
+}
+
+.server-steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.server-steps li.step-active {
+    background: rgba(11, 122, 117, 0.1);
+}
+
+.server-steps li.step-done {
+    color: var(--muted);
+}
+
+.server-steps li.step-done::before {
+    content: '✓';
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+/* ── Architecture Diagram Container ── */
+.server-arch-diagram {
+    background: linear-gradient(135deg, #f0faf8 0%, #edf2fb 100%);
+    border: 2px solid rgba(11, 122, 117, 0.15);
+    border-radius: var(--radius-md, 16px);
+    padding: 1.2rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+.arch-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--brand-deep, #0b5a57);
+    margin-bottom: 1rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+/* ── Flow Row ── */
+.arch-flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-start;
+}
+
+/* ── Architecture Box ── */
+.arch-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.7rem 1rem;
+    border-radius: 14px;
+    border: 2px solid rgba(23, 33, 38, 0.1);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    min-width: 90px;
+    transition: all 300ms ease;
+    font-weight: 600;
+    gap: 0.2rem;
+}
+
+.arch-box strong { font-size: 0.82rem; }
+.arch-box small { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+
+/* Coloured variants */
+.arch-client  { background: #e8f4f8; border-color: #90cdf4; color: #1a5276; }
+.arch-nginx   { background: #e8f5e9; border-color: #81c784; color: #2e7d32; }
+.arch-apache  { background: #fff3e0; border-color: #ffb74d; color: #e65100; }
+.arch-tomcat  { background: #fce4ec; border-color: #f48fb1; color: #880e4f; }
+.arch-static  { background: #f3e5f5; border-color: #ce93d8; color: #6a1b9a; }
+.arch-app     { background: #e8eaf6; border-color: #9fa8da; color: #283593; }
+.arch-db      { background: #fafafa; border-color: #bdbdbd; color: #424242; }
+
+/* Highlight animation */
+.arch-box.arch-active {
+    transform: scale(1.07);
+    box-shadow: 0 0 18px rgba(11, 122, 117, 0.3);
+    border-color: var(--brand) !important;
+    background: rgba(11, 122, 117, 0.12) !important;
+}
+
+/* ── Arrow ── */
+.arch-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.2rem;
+    color: var(--brand);
+    font-weight: 800;
+    flex-shrink: 0;
+    text-align: center;
+    gap: 0.1rem;
+}
+
+.arch-arrow small { font-size: 0.6rem; font-weight: 600; color: var(--muted); }
+.arch-arrow-sm {
+    font-size: 1rem;
+    color: var(--brand);
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+/* ── Fork (split into 2 branches) ── */
+.arch-fork {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.arch-fork-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* ── Legend ── */
+.arch-legend {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+    border-top: 1px solid rgba(23, 33, 38, 0.08);
+    padding-top: 0.7rem;
+}
+
+.arch-tag {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(11, 122, 117, 0.12);
+    color: var(--brand-deep, #0b5a57);
+    font-weight: 700;
+    font-size: 0.74rem;
+    margin-right: 0.2rem;
+}
+
+/* ── Tomcat Internal Nesting ── */
+.tomcat-internals {
+    padding: 0.5rem;
+}
+
+.tc-box {
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+    margin: 0.4rem 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 2px solid;
+    line-height: 1.4;
+}
+
+.tc-server  { border-color: #f48fb1; background: #fce4ec22; color: #880e4f; }
+.tc-service { border-color: #ffb74d; background: #fff3e022; color: #e65100; margin-left: 1rem; }
+.tc-connector { border-color: #81c784; background: #e8f5e922; color: #2e7d32; margin-left: 2rem; font-weight: 600; font-size: 0.76rem; }
+.tc-engine  { border-color: #9fa8da; background: #e8eaf622; color: #283593; margin-left: 2rem; margin-top: 0.3rem; }
+.tc-host    { border-color: #90cdf4; background: #e8f4f822; color: #1a5276; margin-left: 3rem; }
+.tc-context { border-color: #ce93d8; background: #f3e5f522; color: #6a1b9a; margin-left: 4rem; }
+.tc-servlet { border-color: #f48fb1; background: #fce4ec22; color: #880e4f; margin-left: 5rem; font-size: 0.75rem; }
+
+/* ── Interactive Server Demo Styles ── */
+.server-demo-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.8rem 0;
+}
+
+.server-demo-step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    border: 2px solid rgba(23, 33, 38, 0.08);
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 0.84rem;
+    transition: all 300ms ease;
+    cursor: default;
+}
+
+.server-demo-step .step-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    width: 2rem;
+    text-align: center;
+}
+
+.server-demo-step .step-label { font-weight: 600; flex: 1; }
+.server-demo-step .step-detail { font-size: 0.76rem; color: var(--muted); }
+
+.server-demo-step.sds-active {
+    background: rgba(11, 122, 117, 0.12);
+    border-color: var(--brand);
+    transform: translateX(6px);
+}
+
+.server-demo-step.sds-done {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.4);
+    opacity: 0.75;
+}
+
+.server-demo-step.sds-error {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ── Server type switcher tabs ── */
+.server-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+}
+
+.server-tab {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    border: 2px solid rgba(23, 33, 38, 0.12);
+    background: rgba(255, 255, 255, 0.75);
+    font-size: 0.83rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 180ms;
+    font-family: inherit;
+}
+
+.server-tab:hover { border-color: var(--brand); color: var(--brand); }
+.server-tab.active {
+    background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+    color: white;
+    border-color: transparent;
+}
+
+/* ── Config diff highlighter ── */
+.cfg-highlight {
+    background: rgba(11, 122, 117, 0.12);
+    border-left: 3px solid var(--brand);
+    border-radius: 0 6px 6px 0;
+    padding-left: 0.5rem;
+    display: block;
+}
+
+/* ── Responsive ── */
+@media (max-width: 720px) {
+    .arch-flow { flex-direction: column; align-items: flex-start; }
+    .arch-fork { flex-direction: column; }
+    .server-arch-diagram { padding: 0.8rem; }
+    .tc-service  { margin-left: 0.5rem; }
+    .tc-connector,
+    .tc-engine   { margin-left: 1rem; }
+    .tc-host     { margin-left: 1.5rem; }
+    .tc-context  { margin-left: 2rem; }
+    .tc-servlet  { margin-left: 2.5rem; }
+}
+
 /* ── Responsive Adjustments ── */
 @media (max-width: 720px) {
     .demo-tcp-udp-container,
