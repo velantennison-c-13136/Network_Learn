@@ -40,12 +40,12 @@
             <div class="hero-diagram-flow" role="img" aria-label="Detailed request flow from a client device through the network to an application and database">
                 <article class="hero-flow-card">
                     <p class="hero-flow-step">Step 1</p>
-                    <h3>Client LAN</h3>
+                    <h3>Client <abbr title="Local Area Network">LAN</abbr></h3>
                     <p>A laptop or phone joins the local network and prepares a request.</p>
                     <ul>
-                        <li>MAC identifies the NIC on the local link</li>
-                        <li>DHCP gives a private IP, gateway, and DNS server</li>
-                        <li>DNS resolves the site name to an IP</li>
+                        <li><abbr title="Media Access Control">MAC</abbr> identifies the <abbr title="Network Interface Card">NIC</abbr> on the local link</li>
+                        <li><abbr title="Dynamic Host Configuration Protocol">DHCP</abbr> gives a private <abbr title="Internet Protocol">IP</abbr>, gateway, and <abbr title="Domain Name System">DNS</abbr> server</li>
+                        <li><abbr title="Domain Name System">DNS</abbr> resolves the site name to an <abbr title="Internet Protocol">IP</abbr></li>
                     </ul>
                 </article>
 
@@ -54,20 +54,20 @@
                     <h3>Switch + Router</h3>
                     <p>The local network forwards traffic toward the destination network.</p>
                     <ul>
-                        <li>Switch forwards frames using MAC addresses</li>
-                        <li>Router moves packets between IP networks</li>
-                        <li>NAT may translate a private IP to a public IP</li>
+                        <li>Switch forwards frames using <abbr title="Media Access Control">MAC</abbr> addresses</li>
+                        <li>Router moves packets between <abbr title="Internet Protocol">IP</abbr> networks</li>
+                        <li><abbr title="Network Address Translation">NAT</abbr> may translate a private <abbr title="Internet Protocol">IP</abbr> to a public <abbr title="Internet Protocol">IP</abbr></li>
                     </ul>
                 </article>
 
                 <article class="hero-flow-card">
                     <p class="hero-flow-step">Step 3</p>
                     <h3>Internet Transit</h3>
-                    <p>The request crosses WAN links and negotiated transport and security layers.</p>
+                    <p>The request crosses <abbr title="Wide Area Network">WAN</abbr> links and negotiated transport and security layers.</p>
                     <ul>
-                        <li>TCP creates a reliable session</li>
-                        <li>TLS encrypts the connection</li>
-                        <li>HTTPS carries the browser or API request</li>
+                        <li><abbr title="Transmission Control Protocol">TCP</abbr> creates a reliable session</li>
+                        <li><abbr title="Transport Layer Security">TLS</abbr> encrypts the connection</li>
+                        <li><abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr> carries the browser or <abbr title="Application Programming Interface">API</abbr> request</li>
                     </ul>
                 </article>
 
@@ -88,14 +88,14 @@
                     <p>The app reads or writes data and returns a response through the same path.</p>
                     <ul>
                         <li>Application logic validates the request</li>
-                        <li>SQL queries tables, joins, indexes, and transactions</li>
-                        <li>The response travels back to the client over HTTPS</li>
+                        <li><abbr title="Structured Query Language">SQL</abbr> queries tables, joins, indexes, and transactions</li>
+                        <li>The response travels back to the client over <abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr></li>
                     </ul>
                 </article>
             </div>
 
             <p class="hero-diagram-note">
-                End-to-end flow: client LAN -> switch/router -> WAN/internet -> firewall/reverse proxy -> web application -> database.
+                End-to-end flow: client <abbr title="Local Area Network">LAN</abbr> -> switch/router -> <abbr title="Wide Area Network">WAN</abbr>/internet -> firewall/reverse proxy -> web application -> database.
             </p>
         </div>
     </header>
@@ -169,21 +169,21 @@
             <section class="sidebar-card" id="study-map">
                 <h2>Study Map</h2>
                 <ol>
-                    <li>Start with addressing: MAC, IP, subnet, DHCP, DNS.</li>
-                    <li>Move to transport and application protocols: TCP, UDP, HTTP, TLS, SSH.</li>
-                    <li>Then learn the path through infrastructure: proxies, load balancers, firewalls, NAT.</li>
-                    <li>Finish with database foundations and SQL patterns that back modern apps.</li>
+                    <li>Start with addressing: <abbr title="Media Access Control">MAC</abbr>, <abbr title="Internet Protocol">IP</abbr>, subnet, <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr>, <abbr title="Domain Name System">DNS</abbr>.</li>
+                    <li>Move to transport and application protocols: <abbr title="Transmission Control Protocol">TCP</abbr>, <abbr title="User Datagram Protocol">UDP</abbr>, <abbr title="HyperText Transfer Protocol">HTTP</abbr>, <abbr title="Transport Layer Security">TLS</abbr>, <abbr title="Secure Shell">SSH</abbr>.</li>
+                    <li>Then learn the path through infrastructure: proxies, load balancers, firewalls, <abbr title="Network Address Translation">NAT</abbr>.</li>
+                    <li>Finish with database foundations and <abbr title="Structured Query Language">SQL</abbr> patterns that back modern apps.</li>
                 </ol>
             </section>
 
             <section class="sidebar-card">
                 <h2>Quick Memory Hooks</h2>
                 <ul>
-                    <li>MAC identifies a network card on a local link.</li>
-                    <li>IP identifies where a host lives logically.</li>
-                    <li>TCP favors reliability. UDP favors speed and low overhead.</li>
-                    <li>DNS translates names to IP addresses.</li>
-                    <li>NAT lets many private devices share one public IP.</li>
+                    <li><abbr title="Media Access Control">MAC</abbr> identifies a network card on a local link.</li>
+                    <li><abbr title="Internet Protocol">IP</abbr> identifies where a host lives logically.</li>
+                    <li><abbr title="Transmission Control Protocol">TCP</abbr> favors reliability. <abbr title="User Datagram Protocol">UDP</abbr> favors speed and low overhead.</li>
+                    <li><abbr title="Domain Name System">DNS</abbr> translates names to <abbr title="Internet Protocol">IP</abbr> addresses.</li>
+                    <li><abbr title="Network Address Translation">NAT</abbr> lets many private devices share one public <abbr title="Internet Protocol">IP</abbr>.</li>
                     <li>Indexes trade faster reads for extra write cost.</li>
                 </ul>
             </section>
@@ -218,7 +218,7 @@
                     <h3>Network Scope Diagram</h3>
                     <div class="network-scope-diagram" role="img" aria-label="LAN and WAN diagram">
                         <article class="network-node">
-                            <h4>Home LAN</h4>
+                            <h4>Home <abbr title="Local Area Network">LAN</abbr></h4>
                             <div class="network-node-visual local">
                                 <span>PC</span>
                                 <span>Phone</span>
@@ -232,7 +232,7 @@
                         </div>
 
                         <article class="network-node">
-                            <h4>ISP / WAN</h4>
+                            <h4>ISP / <abbr title="Wide Area Network">WAN</abbr></h4>
                             <div class="network-node-visual wan">
                                 <span class="network-pill">Router / ISP</span>
                             </div>
@@ -244,7 +244,7 @@
                         </div>
 
                         <article class="network-node">
-                            <h4>Office LAN</h4>
+                            <h4>Office <abbr title="Local Area Network">LAN</abbr></h4>
                             <div class="network-node-visual local">
                                 <span>Laptop</span>
                                 <span>Printer</span>
@@ -253,16 +253,16 @@
                             <p>Remote users connect through another private network.</p>
                         </article>
                     </div>
-                    <p>The key idea: a LAN is one local broadcast domain or site, while a WAN links multiple networks over larger distances.</p>
+                    <p>The key idea: a <abbr title="Local Area Network">LAN</abbr> is one local broadcast domain or site, while a <abbr title="Wide Area Network">WAN</abbr> links multiple networks over larger distances.</p>
                 </div>
 
                 <div class="topic-list">
                     <details class="topic-card" id="lan-wan" open data-tags="lan wan local area network wide area network">
                         <summary><span>LAN / WAN</span><span>Local scope vs long-distance connectivity</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> A LAN usually covers a home, office, or campus. A WAN connects LANs across cities, countries, or cloud regions.</p>
-                            <p><strong>Real-life example:</strong> Your laptop and printer are on the same LAN. Your branch office talking to headquarters uses a WAN link.</p>
-                            <p><strong>Why it matters:</strong> LANs are typically faster, cheaper, and privately controlled. WANs add latency and rely on carriers or internet links.</p>
+                            <p><strong>Core concept:</strong> A <abbr title="Local Area Network">LAN</abbr> usually covers a home, office, or campus. A <abbr title="Wide Area Network">WAN</abbr> connects <abbr title="Local Area Network">LAN</abbr>s across cities, countries, or cloud regions.</p>
+                            <p><strong>Real-life example:</strong> Your laptop and printer are on the same <abbr title="Local Area Network">LAN</abbr>. Your branch office talking to headquarters uses a <abbr title="Wide Area Network">WAN</abbr> link.</p>
+                            <p><strong>Why it matters:</strong> <abbr title="Local Area Network">LAN</abbr>s are typically faster, cheaper, and privately controlled. <abbr title="Wide Area Network">WAN</abbr>s add latency and rely on carriers or internet links.</p>
                             <pre><code>Example path:
 Laptop -> office switch -> office router -> ISP -> cloud app</code></pre>
                             <p class="reference-links"><a href="https://en.wikipedia.org/wiki/Local_area_network" target="_blank" rel="noreferrer">Reference</a><a href="https://en.wikipedia.org/wiki/Wide_area_network" target="_blank" rel="noreferrer">Compare WAN</a></p>
@@ -273,8 +273,8 @@ Laptop -> office switch -> office router -> ISP -> cloud app</code></pre>
                         <summary><span>Hub / Switch / Router</span><span>How forwarding becomes smarter at each layer</span></summary>
                         <div class="topic-body">
                             <p><strong>Hub:</strong> repeats every signal to every port. It has no intelligence and creates unnecessary traffic.</p>
-                            <p><strong>Switch:</strong> learns MAC addresses and forwards frames only to the right port on the local network.</p>
-                            <p><strong>Router:</strong> connects different IP networks and chooses where packets go next.</p>
+                            <p><strong>Switch:</strong> learns <abbr title="Media Access Control">MAC</abbr> addresses and forwards frames only to the right port on the local network.</p>
+                            <p><strong>Router:</strong> connects different <abbr title="Internet Protocol">IP</abbr> networks and chooses where packets go next.</p>
                             <p><strong>Analogy:</strong> a hub is someone shouting to a room, a switch is a receptionist who knows each desk, and a router is a dispatcher between buildings.</p>
                             <pre><code>Device A --frame--> Switch --packet--> Router --packet--> Internet</code></pre>
                             <p class="reference-links"><a href="https://www.cloudflare.com/learning/network-layer/what-is-a-router/" target="_blank" rel="noreferrer">Router reference</a><a href="https://www.cisco.com/c/en/us/products/switches/what-is-a-network-switch.html" target="_blank" rel="noreferrer">Switch reference</a></p>
@@ -284,7 +284,7 @@ Laptop -> office switch -> office router -> ISP -> cloud app</code></pre>
                     <details class="topic-card" id="mac" data-tags="mac media access control nic layer 2">
                         <summary><span>MAC</span><span>Layer 2 hardware identity on a link</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> A MAC address is attached to a network interface card and is used for frame delivery inside the local segment.</p>
+                            <p><strong>Core concept:</strong> A <abbr title="Media Access Control">MAC</abbr> address is attached to a <abbr title="Network Interface Card">NIC</abbr> and is used for frame delivery inside the local segment.</p>
                             <p><strong>Format:</strong> Usually shown as six hexadecimal pairs like <code>00:1A:2B:3C:4D:5E</code>.</p>
                             <p><strong>Real-life example:</strong> A switch keeps a MAC address table so it knows which desk cable leads to which device.</p>
                             <pre><code>Useful checks:
@@ -298,9 +298,9 @@ ifconfig</code></pre>
                     <details class="topic-card" id="ipv4-ipv6" data-tags="ipv4 ipv6 addressing packets">
                         <summary><span>IPv4 / IPv6</span><span>Logical addressing for modern networks</span></summary>
                         <div class="topic-body">
-                            <p><strong>IPv4:</strong> 32-bit addresses such as <code>192.168.1.24</code>. It is still widely used but limited in address space.</p>
-                            <p><strong>IPv6:</strong> 128-bit addresses such as <code>2001:db8::10</code>. It solves address exhaustion and improves autoconfiguration.</p>
-                            <p><strong>Why it matters:</strong> Routers make decisions based on IP, not MAC. Public internet reachability depends on IP routing.</p>
+                            <p><strong><abbr title="Internet Protocol version 4">IPv4</abbr>:</strong> 32-bit addresses such as <code>192.168.1.24</code>. It is still widely used but limited in address space.</p>
+                            <p><strong><abbr title="Internet Protocol version 6">IPv6</abbr>:</strong> 128-bit addresses such as <code>2001:db8::10</code>. It solves address exhaustion and improves autoconfiguration.</p>
+                            <p><strong>Why it matters:</strong> Routers make decisions based on <abbr title="Internet Protocol">IP</abbr>, not <abbr title="Media Access Control">MAC</abbr>. Public internet reachability depends on <abbr title="Internet Protocol">IP</abbr> routing.</p>
                             <pre><code>IPv4 example: 10.0.20.15/24
 IPv6 example: 2001:db8:1::15/64</code></pre>
                             <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Glossary/IPv4" target="_blank" rel="noreferrer">IPv4</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/IPv6" target="_blank" rel="noreferrer">IPv6</a></p>
@@ -313,7 +313,7 @@ IPv6 example: 2001:db8:1::15/64</code></pre>
                             <p><strong>Private ranges:</strong> <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, and <code>192.168.0.0/16</code>.</p>
                             <p><strong>Public IPs:</strong> globally routable addresses seen on the internet.</p>
                             <p><strong>Real-life example:</strong> Your phone gets <code>192.168.1.34</code> at home, but websites see the public IP owned by your ISP router.</p>
-                            <p><strong>Why it matters:</strong> Private IPs are efficient inside organizations; NAT translates them when accessing public services.</p>
+                            <p><strong>Why it matters:</strong> Private <abbr title="Internet Protocol">IP</abbr>s are efficient inside organizations; <abbr title="Network Address Translation">NAT</abbr> translates them when accessing public services.</p>
                             <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc1918" target="_blank" rel="noreferrer">RFC 1918</a><a href="https://www.iana.org/help/private-addresses" target="_blank" rel="noreferrer">IANA notes</a></p>
                         </div>
                     </details>
@@ -321,8 +321,8 @@ IPv6 example: 2001:db8:1::15/64</code></pre>
                     <details class="topic-card" id="static-dynamic-ip" data-tags="static dynamic ip dhcp reservation">
                         <summary><span>Static / Dynamic IP</span><span>Fixed vs assigned-on-demand addressing</span></summary>
                         <div class="topic-body">
-                            <p><strong>Static IP:</strong> manually configured or permanently reserved. Common for servers, printers, firewalls, and DNS hosts.</p>
-                            <p><strong>Dynamic IP:</strong> assigned automatically for a lease period, usually by DHCP.</p>
+                            <p><strong>Static IP:</strong> manually configured or permanently reserved. Common for servers, printers, firewalls, and <abbr title="Domain Name System">DNS</abbr> hosts.</p>
+                            <p><strong>Dynamic IP:</strong> assigned automatically for a lease period, usually by <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr>.</p>
                             <p><strong>Real-life example:</strong> A web server often needs a stable address; employee laptops usually do not.</p>
                             <pre><code>Good rule:
 Stable service endpoint -> static or reserved IP
@@ -346,7 +346,7 @@ Temporary client device -> dynamic IP</code></pre>
                     <details class="topic-card" id="dhcp" data-tags="dhcp dora discover offer request acknowledge">
                         <summary><span>DHCP</span><span>Automatic IP configuration</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> DHCP gives devices an IP address, subnet mask, default gateway, DNS server, and lease time.</p>
+                            <p><strong>Core concept:</strong> <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr> gives devices an <abbr title="Internet Protocol">IP</abbr> address, subnet mask, default gateway, <abbr title="Domain Name System">DNS</abbr> server, and lease time.</p>
                             <p><strong>Classic flow:</strong> DORA = Discover, Offer, Request, Acknowledge.</p>
                             <p><strong>Real-life example:</strong> When a guest joins office Wi-Fi, the device gets working network settings within seconds without manual typing.</p>
                             <pre><code>DORA flow:
@@ -361,9 +361,9 @@ Server -> Acknowledge</code></pre>
                     <details class="topic-card" id="dns" data-tags="dns resolver records aaaa cname mx ttl">
                         <summary><span>DNS</span><span>The internet's phonebook for names</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> DNS resolves names like <code>example.com</code> into IP addresses.</p>
+                            <p><strong>Core concept:</strong> <abbr title="Domain Name System">DNS</abbr> resolves names like <code>example.com</code> into <abbr title="Internet Protocol">IP</abbr> addresses.</p>
                             <p><strong>Common records:</strong> A, AAAA, CNAME, MX, TXT, NS.</p>
-                            <p><strong>Real-life example:</strong> Typing a URL into a browser usually triggers DNS before any HTTP request can be sent.</p>
+                            <p><strong>Real-life example:</strong> Typing a URL into a browser usually triggers <abbr title="Domain Name System">DNS</abbr> before any <abbr title="HyperText Transfer Protocol">HTTP</abbr> request can be sent.</p>
                             <pre><code>Useful checks:
 nslookup example.com
 dig example.com
@@ -411,10 +411,10 @@ dig example.com MX</code></pre>
                     <details class="topic-card" id="tcp-udp" open data-tags="tcp udp transport reliability latency streaming">
                         <summary><span>TCP / UDP</span><span>Reliable streams vs fast datagrams</span></summary>
                         <div class="topic-body">
-                            <p><strong>TCP:</strong> connection-oriented, ordered, retransmits lost segments, supports flow and congestion control.</p>
-                            <p><strong>UDP:</strong> connectionless, lower overhead, no built-in guarantee of delivery or order.</p>
-                            <p><strong>Use TCP for:</strong> web pages, APIs, email, SSH, database connections.</p>
-                            <p><strong>Use UDP for:</strong> DNS lookups, live voice/video, gaming, telemetry.</p>
+                            <p><strong><abbr title="Transmission Control Protocol">TCP</abbr>:</strong> connection-oriented, ordered, retransmits lost segments, supports flow and congestion control.</p>
+                            <p><strong><abbr title="User Datagram Protocol">UDP</abbr>:</strong> connectionless, lower overhead, no built-in guarantee of delivery or order.</p>
+                            <p><strong>Use <abbr title="Transmission Control Protocol">TCP</abbr> for:</strong> web pages, APIs, email, <abbr title="Secure Shell">SSH</abbr>, database connections.</p>
+                            <p><strong>Use <abbr title="User Datagram Protocol">UDP</abbr> for:</strong> <abbr title="Domain Name System">DNS</abbr> lookups, live voice/video, gaming, telemetry.</p>
                             <pre><code>TCP three-way handshake:
 SYN -> SYN-ACK -> ACK</code></pre>
                             <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc9293" target="_blank" rel="noreferrer">TCP</a><a href="https://datatracker.ietf.org/doc/html/rfc768" target="_blank" rel="noreferrer">UDP</a></p>
@@ -424,13 +424,13 @@ SYN -> SYN-ACK -> ACK</code></pre>
                     <details class="topic-card" id="http-https" data-tags="http https methods headers request response cookies">
                         <summary><span>HTTP / HTTPS</span><span>How browsers and APIs exchange application data</span></summary>
                         <div class="topic-body">
-                            <p><strong>HTTP:</strong> an application-layer protocol for requests and responses.</p>
-                            <p><strong>HTTPS:</strong> HTTP carried over TLS, which provides confidentiality and server authentication.</p>
+                            <p><strong><abbr title="HyperText Transfer Protocol">HTTP</abbr>:</strong> an application-layer protocol for requests and responses.</p>
+                            <p><strong><abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr>:</strong> <abbr title="HyperText Transfer Protocol">HTTP</abbr> carried over <abbr title="Transport Layer Security">TLS</abbr>, which provides confidentiality and server authentication.</p>
                             <p><strong>Common pieces:</strong> methods, URLs, headers, cookies, status codes, bodies.</p>
                             <pre><code>GET /products/42 HTTP/1.1
 Host: shop.example.com
 Accept: application/json</code></pre>
-                            <p><strong>Real-life example:</strong> Loading a product page, sending login credentials, or calling a JSON API all rely on HTTP semantics.</p>
+                            <p><strong>Real-life example:</strong> Loading a product page, sending login credentials, or calling a JSON API all rely on <abbr title="HyperText Transfer Protocol">HTTP</abbr> semantics.</p>
                             <p class="reference-links"><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" target="_blank" rel="noreferrer">HTTP overview</a><a href="https://developer.mozilla.org/en-US/docs/Glossary/HTTPS" target="_blank" rel="noreferrer">HTTPS</a></p>
                         </div>
                     </details>
@@ -438,9 +438,9 @@ Accept: application/json</code></pre>
                     <details class="topic-card" id="tls" data-tags="tls certificates encryption handshake">
                         <summary><span>TLS</span><span>Encrypt the channel and verify who you reached</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> TLS secures a connection with encryption, integrity checks, and certificate-based authentication.</p>
+                            <p><strong>Core concept:</strong> <abbr title="Transport Layer Security">TLS</abbr> secures a connection with encryption, integrity checks, and certificate-based authentication.</p>
                             <p><strong>Handshake idea:</strong> client and server negotiate ciphers, validate the certificate chain, agree on session keys, then encrypt data.</p>
-                            <p><strong>Real-life example:</strong> Online banking depends on TLS so attackers on public Wi-Fi cannot read passwords in transit.</p>
+                            <p><strong>Real-life example:</strong> Online banking depends on <abbr title="Transport Layer Security">TLS</abbr> so attackers on public Wi-Fi cannot read passwords in transit.</p>
                             <pre><code>Common checks:
 openssl s_client -connect example.com:443
 curl -I https://example.com</code></pre>
@@ -451,9 +451,9 @@ curl -I https://example.com</code></pre>
                     <details class="topic-card" id="ftp" data-tags="ftp file transfer active passive">
                         <summary><span>FTP</span><span>Legacy file transfer with separate control and data channels</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> FTP moves files between client and server using a control connection and a separate data connection.</p>
-                            <p><strong>Why it is tricky:</strong> NAT and firewalls can complicate active mode, so passive mode is common.</p>
-                            <p><strong>Modern note:</strong> Plain FTP is not encrypted. SFTP and FTPS are preferred for production use.</p>
+                            <p><strong>Core concept:</strong> <abbr title="File Transfer Protocol">FTP</abbr> moves files between client and server using a control connection and a separate data connection.</p>
+                            <p><strong>Why it is tricky:</strong> <abbr title="Network Address Translation">NAT</abbr> and firewalls can complicate active mode, so passive mode is common.</p>
+                            <p><strong>Modern note:</strong> Plain <abbr title="File Transfer Protocol">FTP</abbr> is not encrypted. <abbr title="SSH File Transfer Protocol">SFTP</abbr> and <abbr title="FTP Secure">FTPS</abbr> are preferred for production use.</p>
                             <pre><code>Legacy ports:
 21 = control
 20 = data in active mode</code></pre>
@@ -464,9 +464,9 @@ curl -I https://example.com</code></pre>
                     <details class="topic-card" id="smtp" data-tags="smtp email relay mx mail server">
                         <summary><span>SMTP</span><span>Mail transfer between clients and mail servers</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> SMTP sends outgoing mail and relays messages between mail servers.</p>
-                            <p><strong>Typical flow:</strong> mail client submits to an SMTP server, which looks up the recipient domain's MX record, then relays.</p>
-                            <p><strong>Real-life example:</strong> A password reset email usually goes through SMTP infrastructure before it reaches your inbox.</p>
+                            <p><strong>Core concept:</strong> <abbr title="Simple Mail Transfer Protocol">SMTP</abbr> sends outgoing mail and relays messages between mail servers.</p>
+                            <p><strong>Typical flow:</strong> mail client submits to an <abbr title="Simple Mail Transfer Protocol">SMTP</abbr> server, which looks up the recipient domain's MX record, then relays.</p>
+                            <p><strong>Real-life example:</strong> A password reset email usually goes through <abbr title="Simple Mail Transfer Protocol">SMTP</abbr> infrastructure before it reaches your inbox.</p>
                             <pre><code>Common ports:
 25 = relay
 587 = authenticated submission
@@ -478,9 +478,9 @@ curl -I https://example.com</code></pre>
                     <details class="topic-card" id="telnet-ssh" data-tags="telnet ssh remote shell encrypted access">
                         <summary><span>Telnet / SSH</span><span>Remote shells, with and without security</span></summary>
                         <div class="topic-body">
-                            <p><strong>Telnet:</strong> remote terminal access without encryption. It is useful historically, but unsafe on real networks.</p>
-                            <p><strong>SSH:</strong> encrypted remote administration, tunneling, and secure copy.</p>
-                            <p><strong>Real-life example:</strong> Developers log into Linux servers with SSH to inspect logs, deploy changes, or forward ports securely.</p>
+                            <p><strong><abbr title="Telnet">Telnet</abbr>:</strong> remote terminal access without encryption. It is useful historically, but unsafe on real networks.</p>
+                            <p><strong><abbr title="Secure Shell">SSH</abbr>:</strong> encrypted remote administration, tunneling, and secure copy.</p>
+                            <p><strong>Real-life example:</strong> Developers log into Linux servers with <abbr title="Secure Shell">SSH</abbr> to inspect logs, deploy changes, or forward ports securely.</p>
                             <pre><code>ssh user@server.example.com
 scp backup.sql admin@server:/srv/backups/</code></pre>
                             <p class="reference-links"><a href="https://datatracker.ietf.org/doc/html/rfc854" target="_blank" rel="noreferrer">Telnet</a><a href="https://datatracker.ietf.org/doc/html/rfc4251" target="_blank" rel="noreferrer">SSH</a></p>
@@ -496,11 +496,11 @@ scp backup.sql admin@server:/srv/backups/</code></pre>
                                     <tr><th>Service</th><th>Port</th><th>Notes</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>HTTP</td><td>80</td><td>Plain web traffic</td></tr>
-                                    <tr><td>HTTPS</td><td>443</td><td>Encrypted web traffic</td></tr>
-                                    <tr><td>SSH</td><td>22</td><td>Remote shell</td></tr>
-                                    <tr><td>DNS</td><td>53</td><td>Often UDP, sometimes TCP</td></tr>
-                                    <tr><td>SMTP</td><td>25 / 587</td><td>Mail relay and submission</td></tr>
+                                    <tr><td><abbr title="HyperText Transfer Protocol">HTTP</abbr></td><td>80</td><td>Plain web traffic</td></tr>
+                                    <tr><td><abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr></td><td>443</td><td>Encrypted web traffic</td></tr>
+                                    <tr><td><abbr title="Secure Shell">SSH</abbr></td><td>22</td><td>Remote shell</td></tr>
+                                    <tr><td><abbr title="Domain Name System">DNS</abbr></td><td>53</td><td>Often <abbr title="User Datagram Protocol">UDP</abbr>, sometimes <abbr title="Transmission Control Protocol">TCP</abbr></td></tr>
+                                    <tr><td><abbr title="Simple Mail Transfer Protocol">SMTP</abbr></td><td>25 / 587</td><td>Mail relay and submission</td></tr>
                                 </tbody>
                             </table>
                             <pre><code>Useful checks:
@@ -578,7 +578,7 @@ write access logs</code></pre>
                                 <li>Non-blocking, event-driven architecture — one worker can handle thousands of connections at once.</li>
                                 <li>Extremely fast at serving static files (HTML, CSS, JS, images).</li>
                                 <li>Widely used as a reverse proxy in front of Node.js, Python, PHP, and Java apps.</li>
-                                <li>Can terminate TLS, compress responses, cache content, and balance load — all in one process.</li>
+                                <li>Can terminate <abbr title="Transport Layer Security">TLS</abbr>, compress responses, cache content, and balance load — all in one process.</li>
                             </ul>
 
                             <!-- Architecture diagram -->
@@ -608,9 +608,9 @@ write access logs</code></pre>
                             <!-- Step-by-step request lifecycle -->
                             <p><strong>Request lifecycle — step by step:</strong></p>
                             <ol class="server-steps">
-                                <li><strong>Client connects</strong> — Browser opens a TCP connection to Nginx on port 80 or 443.</li>
-                                <li><strong>TLS handshake</strong> — If HTTPS, Nginx terminates TLS using the SSL certificate stored on disk.</li>
-                                <li><strong>Request parsing</strong> — Nginx reads the HTTP request line and headers (e.g., <code>GET /index.html HTTP/1.1</code>).</li>
+                                <li><strong>Client connects</strong> — Browser opens a <abbr title="Transmission Control Protocol">TCP</abbr> connection to Nginx on port 80 or 443.</li>
+                                <li><strong><abbr title="Transport Layer Security">TLS</abbr> handshake</strong> — If <abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr>, Nginx terminates <abbr title="Transport Layer Security">TLS</abbr> using the SSL certificate stored on disk.</li>
+                                <li><strong>Request parsing</strong> — Nginx reads the <abbr title="HyperText Transfer Protocol">HTTP</abbr> request line and headers (e.g., <code>GET /index.html HTTP/1.1</code>).</li>
                                 <li><strong>Location matching</strong> — Nginx checks the config <code>location</code> blocks in order to decide what to do.</li>
                                 <li><strong>Static file? Serve it directly</strong> — If the path maps to a file on disk (e.g., <code>/var/www/html/logo.png</code>), Nginx sends it immediately — no app server needed.</li>
                                 <li><strong>Dynamic request? Proxy it</strong> — If the path needs application logic (e.g., <code>/api/users</code>), Nginx forwards it to an upstream app server via <code>proxy_pass</code>.</li>
@@ -649,7 +649,7 @@ server {
                                     <tr><td>Web server</td><td>Serves static HTML, CSS, JS, images</td><td>Landing pages, SPAs</td></tr>
                                     <tr><td>Reverse proxy</td><td>Forwards requests to an app server</td><td>Node.js, Gunicorn, PHP-FPM</td></tr>
                                     <tr><td>Load balancer</td><td>Spreads requests across multiple backends</td><td>upstream { server app1; server app2; }</td></tr>
-                                    <tr><td>TLS terminator</td><td>Handles HTTPS, passes plain HTTP upstream</td><td>Offloads crypto from app servers</td></tr>
+                                    <tr><td><abbr title="Transport Layer Security">TLS</abbr> terminator</td><td>Handles <abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr>, passes plain <abbr title="HyperText Transfer Protocol">HTTP</abbr> upstream</td><td>Offloads crypto from app servers</td></tr>
                                     <tr><td>Cache</td><td>Stores upstream responses to reduce load</td><td>proxy_cache_path</td></tr>
                                 </tbody>
                             </table>
@@ -705,10 +705,10 @@ server {
                             <!-- Step-by-step request lifecycle -->
                             <p><strong>Request lifecycle — step by step:</strong></p>
                             <ol class="server-steps">
-                                <li><strong>Client connects</strong> — A TCP connection arrives on port 80 or 443.</li>
+                                <li><strong>Client connects</strong> — A <abbr title="Transmission Control Protocol">TCP</abbr> connection arrives on port 80 or 443.</li>
                                 <li><strong>MPM accepts the connection</strong> — The Multi-Processing Module (prefork/worker/event) assigns a process or thread.</li>
-                                <li><strong>mod_ssl decrypts</strong> — If HTTPS, <code>mod_ssl</code> handles the TLS handshake and decryption.</li>
-                                <li><strong>Request parsing</strong> — Apache reads the HTTP request line, headers, and body.</li>
+                                <li><strong>mod_ssl decrypts</strong> — If <abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr>, <code>mod_ssl</code> handles the <abbr title="Transport Layer Security">TLS</abbr> handshake and decryption.</li>
+                                <li><strong>Request parsing</strong> — Apache reads the <abbr title="HyperText Transfer Protocol">HTTP</abbr> request line, headers, and body.</li>
                                 <li><strong>.htaccess checked</strong> — Apache reads any <code>.htaccess</code> files in the requested directory for per-directory config (rewrites, auth, deny rules).</li>
                                 <li><strong>VirtualHost matched</strong> — Apache compares the <code>Host</code> header to configured virtual hosts, picking the right document root and config.</li>
                                 <li><strong>Handler dispatched</strong> — Apache picks the right module: <code>mod_php</code> for <code>.php</code> files, <code>mod_rewrite</code> for URL transforms, <code>mod_proxy</code> to forward elsewhere.</li>
@@ -772,8 +772,8 @@ server {
                             <!-- Key traits -->
                             <p><strong>Key concepts to understand:</strong></p>
                             <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
-                                <li><strong>Servlet:</strong> a Java class that handles HTTP requests and produces responses — the building block of Java web apps.</li>
-                                <li><strong>JSP (JavaServer Pages):</strong> HTML templates with embedded Java code, compiled by Tomcat into servlets.</li>
+                                <li><strong>Servlet:</strong> a Java class that handles <abbr title="HyperText Transfer Protocol">HTTP</abbr> requests and produces responses — the building block of Java web apps.</li>
+                                <li><strong><abbr title="JavaServer Pages">JSP</abbr> (JavaServer Pages):</strong> HTML templates with embedded Java code, compiled by Tomcat into servlets.</li>
                                 <li><strong>.war file:</strong> a packaged Java web application (Web Application Archive) — Tomcat deploys these.</li>
                                 <li>Tomcat is <em>not</em> a full Java EE/Jakarta EE server (no EJB support by default) — it is a lightweight servlet container.</li>
                                 <li>Often used behind Nginx or Apache httpd which handle SSL, static files, and load balancing.</li>
@@ -829,8 +829,8 @@ server {
                             <p><strong>Request lifecycle — step by step:</strong></p>
                             <ol class="server-steps">
                                 <li><strong>Client sends HTTP request</strong> — e.g., <code>GET /myapp/products HTTP/1.1</code>.</li>
-                                <li><strong>Nginx/Apache receives it</strong> — handles TLS, then forwards to Tomcat via HTTP proxy or AJP connector on port 8080/8009.</li>
-                                <li><strong>Tomcat Connector accepts</strong> — the Coyote HTTP connector (or AJP connector) reads the request.</li>
+                                <li><strong>Nginx/Apache receives it</strong> — handles <abbr title="Transport Layer Security">TLS</abbr>, then forwards to Tomcat via <abbr title="HyperText Transfer Protocol">HTTP</abbr> proxy or AJP connector on port 8080/8009.</li>
+                                <li><strong>Tomcat Connector accepts</strong> — the Coyote <abbr title="HyperText Transfer Protocol">HTTP</abbr> connector (or AJP connector) reads the request.</li>
                                 <li><strong>Engine routes to Host</strong> — Catalina Engine finds the correct virtual host (e.g., <code>localhost</code>).</li>
                                 <li><strong>Host routes to Context</strong> — maps the URL path to a deployed <code>.war</code> application (e.g., <code>/myapp</code> → <code>myapp.war</code>).</li>
                                 <li><strong>Servlet selected by URL pattern</strong> — the web.xml or annotation mapping matches <code>/products</code> to a specific Java Servlet class.</li>
@@ -863,7 +863,7 @@ server {
                                     <tbody>
                                         <tr><td>Format</td><td>Binary (compact packets)</td><td>Plain text headers</td></tr>
                                         <tr><td>Performance</td><td>Slightly faster, lower overhead</td><td>Slightly more overhead</td></tr>
-                                        <tr><td>Keep-alive</td><td>Built-in persistent connections</td><td>Via HTTP keep-alive</td></tr>
+                                        <tr><td>Keep-alive</td><td>Built-in persistent connections</td><td>Via <abbr title="HyperText Transfer Protocol">HTTP</abbr> keep-alive</td></tr>
                                         <tr><td>Remote IP passthrough</td><td>Automatic — Tomcat sees real client IP</td><td>Needs <code>X-Forwarded-For</code> header</td></tr>
                                         <tr><td>Security risk</td><td>⚠️ CVE-2020-1938 "Ghostcat" — must secure</td><td>Standard HTTP security applies</td></tr>
                                         <tr><td>Modern recommendation</td><td>Disable if not needed; use secret</td><td>Preferred for simplicity &amp; safety</td></tr>
@@ -1282,7 +1282,7 @@ public class ProductServlet extends HttpServlet {
                             <div class="server-arch-diagram" style="margin-top:1rem">
                                 <div class="arch-title">🔗 Session Clustering &amp; Replication</div>
                                 <p style="margin:0.5rem 0;font-size:0.95rem">
-                                    When you run <strong>multiple Tomcat instances</strong> behind a load balancer, HTTP sessions must be shared
+                                    When you run <strong>multiple Tomcat instances</strong> behind a load balancer, <abbr title="HyperText Transfer Protocol">HTTP</abbr> sessions must be shared
                                     so that any node can serve any user — not just the one that created the session.
                                 </p>
                                 <div class="arch-flow" style="flex-wrap:wrap;gap:0.7rem;margin:0.7rem 0">
@@ -1394,7 +1394,7 @@ export CATALINA_OPTS="\
                         <summary><span>Proxy / Reverse Proxy</span><span>Intermediaries that represent the client or the server</span></summary>
                         <div class="topic-body">
                             <p><strong>Forward proxy:</strong> acts on behalf of clients, often for policy, privacy, or outbound filtering.</p>
-                            <p><strong>Reverse proxy:</strong> acts on behalf of servers, commonly for TLS termination, caching, routing, and hiding backend details.</p>
+                            <p><strong>Reverse proxy:</strong> acts on behalf of servers, commonly for <abbr title="Transport Layer Security">TLS</abbr> termination, caching, routing, and hiding backend details.</p>
                             <p><strong>Real-life example:</strong> A reverse proxy can route <code>/api</code> to an application server and <code>/images</code> to static storage.</p>
                             <pre><code>Client -> Reverse Proxy -> App Server
 Employee Browser -> Forward Proxy -> Internet</code></pre>
@@ -1431,7 +1431,7 @@ Deny: any -> db-server:1433 from internet</code></pre>
                     <details class="topic-card" id="nat" data-tags="nat network address translation pat masquerade">
                         <summary><span>NAT</span><span>Translate addresses between private and public networks</span></summary>
                         <div class="topic-body">
-                            <p><strong>Core concept:</strong> NAT rewrites source or destination addresses as packets move between networks.</p>
+                            <p><strong>Core concept:</strong> <abbr title="Network Address Translation">NAT</abbr> rewrites source or destination addresses as packets move between networks.</p>
                             <p><strong>Most common case:</strong> many home or office devices share one public IP through port address translation.</p>
                             <p><strong>Real-life example:</strong> Ten laptops browse the web, but the outside world sees one public IP from the gateway router.</p>
                             <pre><code>Inside client: 192.168.1.24:51514
@@ -1642,7 +1642,7 @@ COMMIT;
                             <li>Run <code>ipconfig /all</code> or <code>ifconfig</code> and note your IP, gateway, and DNS server.</li>
                             <li>Run <code>nslookup example.com</code> and capture the returned IP.</li>
                             <li>Run <code>curl -I https://example.com</code> and inspect the response headers.</li>
-                            <li>Explain where DHCP, DNS, TCP, TLS, HTTPS, NAT, and the web server each appear in the path.</li>
+                            <li>Explain where <abbr title="Dynamic Host Configuration Protocol">DHCP</abbr>, <abbr title="Domain Name System">DNS</abbr>, <abbr title="Transmission Control Protocol">TCP</abbr>, <abbr title="Transport Layer Security">TLS</abbr>, <abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr>, <abbr title="Network Address Translation">NAT</abbr>, and the web server each appear in the path.</li>
                         </ol>
                     </article>
 
@@ -1652,7 +1652,7 @@ COMMIT;
                             <li>Choose a private range such as <code>192.168.50.0/24</code>.</li>
                             <li>Create a subnet plan for users, printers, and servers.</li>
                             <li>Decide which devices need static IPs and which should be dynamic.</li>
-                            <li>Write example firewall rules and explain where NAT would happen.</li>
+                            <li>Write example firewall rules and explain where <abbr title="Network Address Translation">NAT</abbr> would happen.</li>
                         </ol>
                     </article>
 
@@ -1698,12 +1698,12 @@ COMMIT;
                                 <tr><th>Protocol</th><th>Port</th></tr>
                             </thead>
                             <tbody>
-                                <tr><td>SSH</td><td>22</td></tr>
-                                <tr><td>DNS</td><td>53</td></tr>
-                                <tr><td>HTTP</td><td>80</td></tr>
-                                <tr><td>HTTPS</td><td>443</td></tr>
-                                <tr><td>SMTP</td><td>25 / 587</td></tr>
-                                <tr><td>MSSQL</td><td>1433</td></tr>
+                                <tr><td><abbr title="Secure Shell">SSH</abbr></td><td>22</td></tr>
+                                <tr><td><abbr title="Domain Name System">DNS</abbr></td><td>53</td></tr>
+                                <tr><td><abbr title="HyperText Transfer Protocol">HTTP</abbr></td><td>80</td></tr>
+                                <tr><td><abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr></td><td>443</td></tr>
+                                <tr><td><abbr title="Simple Mail Transfer Protocol">SMTP</abbr></td><td>25 / 587</td></tr>
+                                <tr><td><abbr title="Microsoft SQL Server">MSSQL</abbr></td><td>1433</td></tr>
                             </tbody>
                         </table>
                     </article>
