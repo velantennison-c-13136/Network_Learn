@@ -1189,6 +1189,184 @@ public class ProductServlet extends HttpServlet {
                                 </tbody>
                             </table>
 
+                            <!-- ── Thread Pool & Connectors ── -->
+                            <div class="server-arch-diagram" style="margin-top:1rem">
+                                <div class="arch-title">🧵 Thread Pool &amp; Connector Models</div>
+                                <p style="margin:0.5rem 0;font-size:0.95rem">
+                                    Tomcat uses the <strong>Coyote</strong> connector component to accept connections and hand them to worker threads.
+                                    The <strong>NIO (Non-blocking I/O)</strong> connector is the default since Tomcat 8.5 and is recommended for production.
+                                </p>
+                                <table>
+                                    <thead><tr><th>Connector</th><th>Protocol</th><th>How it works</th><th>When to use</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><strong>NIO</strong> (default)</td><td>HTTP/1.1</td><td>Non-blocking I/O with a small thread pool; one acceptor + poller threads + worker pool</td><td>General production use</td></tr>
+                                        <tr><td><strong>NIO2</strong></td><td>HTTP/1.1</td><td>Async I/O using Java 7 AsynchronousChannel API</td><td>High-concurrency edge cases</td></tr>
+                                        <tr><td><strong>APR/Native</strong></td><td>HTTP/1.1, AJP</td><td>Uses native Apache Portable Runtime; fastest for SSL heavy loads</td><td>If APR is installed on the OS</td></tr>
+                                        <tr><td><strong>AJP</strong></td><td>AJP/1.3</td><td>Binary protocol for Apache httpd front-end via mod_jk or mod_proxy_ajp</td><td>Apache httpd reverse proxy</td></tr>
+                                    </tbody>
+                                </table>
+                                <p style="font-size:0.9rem;margin-top:0.6rem"><strong>Executor (shared thread pool) — best practice for multiple connectors:</strong></p>
+                                <pre style="margin:0.4rem 0 0"><code>&lt;!-- Define a named Executor (shared thread pool) --&gt;
+&lt;Executor name="tomcatThreadPool"
+          className="org.apache.catalina.core.StandardThreadExecutor"
+          maxThreads="400"
+          minSpareThreads="25"
+          maxIdleTime="60000"
+          namePrefix="catalina-exec-" /&gt;
+
+&lt;!-- Reference it in the Connector --&gt;
+&lt;Connector executor="tomcatThreadPool"
+           port="8080" protocol="HTTP/1.1"
+           connectionTimeout="20000"
+           maxConnections="10000"
+           acceptCount="200" /&gt;
+&lt;!-- maxConnections: OS-level queue; acceptCount: backlog when all threads busy --&gt;</code></pre>
+                            </div>
+
+                            <!-- ── ClassLoader Hierarchy ── -->
+                            <div class="server-arch-diagram" style="margin-top:1rem">
+                                <div class="arch-title">📚 Tomcat ClassLoader Hierarchy</div>
+                                <p style="margin:0.5rem 0;font-size:0.95rem">
+                                    Understanding class loading prevents <code>ClassNotFoundException</code>, <code>ClassCastException</code>, and
+                                    <em>"class loaded by two different class loaders"</em> errors — a common pain point in Tomcat.
+                                </p>
+                                <div class="tomcat-internals" style="margin:0.6rem 0">
+                                    <div class="tc-box tc-server" style="margin-left:0">🌐 Bootstrap ClassLoader (JDK core — rt.jar)
+                                        <div class="tc-box tc-service">⚙️ System ClassLoader (CLASSPATH, bootstrap.jar)
+                                            <div class="tc-box tc-connector">🔧 Common ClassLoader (CATALINA_HOME/lib — shared by all apps)
+                                                <div class="tc-box tc-host">📦 WebApp ClassLoader (WEB-INF/lib + WEB-INF/classes — isolated per app)
+                                                    <div class="tc-box tc-servlet">☕ Your application classes load here</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <ul style="margin:0.4rem 0 0;padding-left:1.4rem;line-height:1.8;font-size:0.9rem">
+                                    <li><strong>Each web app gets its own WebApp ClassLoader</strong> — so app A and app B are fully isolated even if they use different versions of the same library.</li>
+                                    <li><strong>Classes in <code>CATALINA_HOME/lib</code></strong> (common loader) are shared across all apps — put JDBC drivers here.</li>
+                                    <li><strong>Conflict rule:</strong> if a class exists in both <code>WEB-INF/lib</code> and <code>CATALINA_HOME/lib</code>, the WebApp ClassLoader wins (parent-last delegation — opposite of standard Java).</li>
+                                    <li><strong>Memory leak risk:</strong> if a webapp doesn't release its ClassLoader on undeploy, <code>PermGen</code>/<code>Metaspace</code> fills up. The <code>JreMemoryLeakPreventionListener</code> helps.</li>
+                                </ul>
+                            </div>
+
+                            <!-- ── WAR Deployment Methods ── -->
+                            <p style="margin-top:1.2rem"><strong>🚀 WAR Deployment — 4 ways to deploy your app:</strong></p>
+                            <table>
+                                <thead><tr><th>Method</th><th>How</th><th>Notes</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Copy to webapps/</td><td><code>cp myapp.war $CATALINA_HOME/webapps/</code></td><td>Tomcat auto-unpacks if <code>autoDeploy="true"</code>. Simplest method.</td></tr>
+                                    <tr><td>Manager App (HTTP)</td><td><code>curl -u admin:pass http://localhost:8080/manager/text/deploy?path=/myapp&amp;war=file:/path/myapp.war</code></td><td>Remote deploy without restart. Requires manager-script role in tomcat-users.xml.</td></tr>
+                                    <tr><td>Context XML file</td><td>Create <code>conf/Catalina/localhost/myapp.xml</code> with <code>&lt;Context docBase="/opt/myapp.war" /&gt;</code></td><td>App lives outside webapps/. Survives <code>autoDeploy</code> cleanup. Good for production.</td></tr>
+                                    <tr><td>Ant/Maven plugin</td><td><code>mvn tomcat7:deploy -Dmaven.tomcat.url=http://localhost:8080/manager/text</code></td><td>CI/CD pipeline integration. Uses Manager App under the hood.</td></tr>
+                                </tbody>
+                            </table>
+
+                            <pre><code># conf/tomcat-users.xml — enable Manager App access
+&lt;tomcat-users&gt;
+  &lt;role rolename="manager-gui" /&gt;       &lt;!-- web UI access --&gt;
+  &lt;role rolename="manager-script" /&gt;    &lt;!-- REST API / curl --&gt;
+  &lt;role rolename="manager-jmx" /&gt;       &lt;!-- JMX access --&gt;
+  &lt;user username="admin"
+        password="strongPassword123!"
+        roles="manager-gui,manager-script" /&gt;
+&lt;/tomcat-users&gt;
+
+# ⚠️ In production: IP-restrict Manager App via context.xml
+# webapps/manager/META-INF/context.xml
+&lt;Context antiResourceLocking="false" privileged="true"&gt;
+  &lt;Valve className="org.apache.catalina.valves.RemoteAddrValve"
+         allow="127\.\d+\.\d+\.\d+|::1" /&gt;
+&lt;/Context&gt;</code></pre>
+
+                            <!-- ── Session Clustering ── -->
+                            <div class="server-arch-diagram" style="margin-top:1rem">
+                                <div class="arch-title">🔗 Session Clustering &amp; Replication</div>
+                                <p style="margin:0.5rem 0;font-size:0.95rem">
+                                    When you run <strong>multiple Tomcat instances</strong> behind a load balancer, HTTP sessions must be shared
+                                    so that any node can serve any user — not just the one that created the session.
+                                </p>
+                                <div class="arch-flow" style="flex-wrap:wrap;gap:0.7rem;margin:0.7rem 0">
+                                    <div class="arch-box arch-client">🌐<br><strong>Browser</strong><br><small>session cookie</small></div>
+                                    <div class="arch-arrow">→</div>
+                                    <div class="arch-box arch-nginx">⚡<br><strong>Load Balancer</strong><br><small>round robin</small></div>
+                                    <div class="arch-fork">
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-tomcat">☕<br><strong>Tomcat 1</strong><br><small>shared sessions</small></div>
+                                        </div>
+                                        <div class="arch-fork-row">
+                                            <div class="arch-arrow-sm">→</div>
+                                            <div class="arch-box arch-tomcat">☕<br><strong>Tomcat 2</strong><br><small>shared sessions</small></div>
+                                        </div>
+                                    </div>
+                                    <div class="arch-arrow">→</div>
+                                    <div class="arch-box arch-db">🗄️<br><strong>Redis / DB</strong><br><small>session store</small></div>
+                                </div>
+                                <p style="font-size:0.9rem;margin:0.4rem 0 0.3rem"><strong>Three approaches:</strong></p>
+                                <ul style="margin:0;padding-left:1.4rem;line-height:1.8;font-size:0.9rem">
+                                    <li><strong>Sticky sessions (simplest):</strong> Load balancer always routes the same user to the same Tomcat node. No session sharing needed, but one node failure loses all its sessions.</li>
+                                    <li><strong>DeltaManager (built-in):</strong> Tomcat replicates session changes to <em>all</em> cluster nodes via multicast. Works for small clusters (&lt;5 nodes). Configure with <code>&lt;Cluster className="org.apache.catalina.ha.tcp.SimpleTcpCluster"/&gt;</code> in server.xml.</li>
+                                    <li><strong>External session store (production):</strong> Store sessions in Redis or a database. Use <a href="https://github.com/redisson/redisson/tree/master/redisson-tomcat" target="_blank" rel="noreferrer">Redisson Tomcat session manager</a> or Spring Session. Nodes are stateless — any node can serve any request.</li>
+                                </ul>
+                            </div>
+
+                            <!-- ── Logging ── -->
+                            <p style="margin-top:1.2rem"><strong>📋 Logging in Tomcat:</strong></p>
+                            <table>
+                                <thead><tr><th>Log file</th><th>Location</th><th>What it contains</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>catalina.out</code></td><td>logs/</td><td>Tomcat startup, shutdown, and all System.out/System.err from apps</td></tr>
+                                    <tr><td><code>catalina.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat internal logging (Catalina, Coyote, Jasper)</td></tr>
+                                    <tr><td><code>localhost.YYYY-MM-DD.log</code></td><td>logs/</td><td>Per-host errors and app context startup errors</td></tr>
+                                    <tr><td><code>localhost_access_log.txt</code></td><td>logs/</td><td>HTTP access log (configured via AccessLogValve)</td></tr>
+                                    <tr><td><code>manager.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat Manager App activity</td></tr>
+                                </tbody>
+                            </table>
+                            <pre><code># conf/logging.properties — control Tomcat's internal log levels
+# Available levels: SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST
+org.apache.catalina.core.ContainerBase.[Catalina].[localhost].level = INFO
+org.apache.catalina.core.ContainerBase.[Catalina].[localhost].handlers = \
+    2localhost.org.apache.juli.AsyncFileHandler
+
+# Reduce noise from specific classes
+org.apache.jasper.level = WARNING
+org.apache.coyote.level = WARNING
+
+# Your app can use Log4j2 by adding log4j2.xml to WEB-INF/classes/
+# and adding log4j-core + log4j-api JARs to WEB-INF/lib/</code></pre>
+
+                            <!-- ── JVM Tuning ── -->
+                            <p style="margin-top:1.2rem"><strong>⚙️ JVM Tuning for Tomcat (CATALINA_OPTS / JAVA_OPTS):</strong></p>
+                            <pre><code># bin/setenv.sh — create this file to set JVM options (not included by default)
+export CATALINA_OPTS="\
+  -server \
+  -Xms512m -Xmx2g \            # initial and max heap
+  -XX:MetaspaceSize=128m \     # initial metaspace (class definitions)
+  -XX:MaxMetaspaceSize=512m \  # max metaspace — prevents unlimited growth
+  -XX:+UseG1GC \               # G1 Garbage Collector — best for most Tomcat workloads
+  -XX:MaxGCPauseMillis=200 \   # target GC pause ≤ 200ms
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/var/log/tomcat/heapdump.hprof \
+  -Djava.security.egd=file:/dev/./urandom \  # fix slow SecureRandom on Linux
+  -Dfile.encoding=UTF-8"
+
+# JAVA_OPTS applies to ALL java commands (including shutdown script), so prefer CATALINA_OPTS
+# Quick memory estimation: heap = (avg request memory × max threads) + headroom</code></pre>
+
+                            <!-- ── Tomcat File Layout ── -->
+                            <p style="margin-top:1.2rem"><strong>📁 Tomcat directory structure at a glance:</strong></p>
+                            <pre><code>$CATALINA_HOME/
+├── bin/               # startup.sh, shutdown.sh, catalina.sh, setenv.sh
+├── conf/              # server.xml, web.xml, context.xml, tomcat-users.xml, logging.properties
+├── lib/               # Shared JARs (servlet-api.jar, JDBC drivers, etc.)
+├── logs/              # catalina.out, access logs, app logs
+├── webapps/           # Drop .war files here for auto-deploy
+│   ├── ROOT/          # App at context path /  (replace for production)
+│   ├── myapp/         # Unpacked myapp.war — Tomcat expands it here
+│   └── manager/       # Tomcat Manager App (restrict or remove in production)
+├── work/              # Compiled JSP pages (.class files from Jasper)
+└── temp/              # Temporary files (uploaded parts, etc.)</code></pre>
+
                             <!-- Comparison table -->
                             <p><strong>Nginx vs Apache vs Tomcat — at a glance:</strong></p>
                             <table>
