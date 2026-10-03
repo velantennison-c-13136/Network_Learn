@@ -540,18 +540,19 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="text" id="dns-input" value="www.example.com" placeholder="e.g. www.example.com" class="demo-input">
             <button class="demo-btn demo-btn-sm" id="dns-btn">▶ Resolve</button>
         </div>
-        <div class="demo-dns-flow" id="dns-sim">
-            <div class="demo-dns-step" data-ds="0">💻<span>Your Browser</span></div>
+        <div class="demo-network-path" id="dns-sim" style="position:relative">
+            <div class="demo-node demo-n-device" data-ds="0">💻<span>Your Browser</span></div>
             <div class="demo-arrow">→</div>
-            <div class="demo-dns-step" data-ds="1">📋<span>Local Cache</span></div>
+            <div class="demo-node demo-n-switch" data-ds="1">📋<span>Local Cache</span></div>
             <div class="demo-arrow">→</div>
-            <div class="demo-dns-step" data-ds="2">🏢<span>Recursive Resolver</span></div>
+            <div class="demo-node demo-n-router" data-ds="2">🏢<span>Recursive Resolver</span></div>
             <div class="demo-arrow">→</div>
-            <div class="demo-dns-step" data-ds="3">🌍<span>Root Server</span></div>
+            <div class="demo-node demo-n-router" data-ds="3">🌍<span>Root Server</span></div>
             <div class="demo-arrow">→</div>
-            <div class="demo-dns-step" data-ds="4">🏷️<span>TLD Server</span></div>
+            <div class="demo-node demo-n-switch" data-ds="4">🏷️<span>TLD Server</span></div>
             <div class="demo-arrow">→</div>
-            <div class="demo-dns-step" data-ds="5">📖<span>Authoritative</span></div>
+            <div class="demo-node demo-n-router" data-ds="5">📖<span>Authoritative</span></div>
+            <div class="demo-packet" id="dns-pkt">🔎</div>
         </div>
         <div class="demo-log" id="dns-log"></div>
     `);
@@ -565,28 +566,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const ip = `${Math.floor(Math.random() * 200) + 20}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
             const log = document.getElementById('dns-log');
             const sim = document.getElementById('dns-sim');
+            const pkt = document.getElementById('dns-pkt');
             log.innerHTML = '';
-            sim.querySelectorAll('.demo-dns-step').forEach(s => s.classList.remove('demo-node-active'));
-            
+            sim.querySelectorAll('.demo-node').forEach(s => s.classList.remove('demo-node-active'));
+
             const steps = [
                 { sel: '[data-ds="0"]', msg: `🔎 Browser asks: "What is the IP for ${domain}?"` },
                 { sel: '[data-ds="1"]', msg: `📋 Checking local cache... Not found!` },
                 { sel: '[data-ds="2"]', msg: `🏢 Asking recursive resolver (e.g. 8.8.8.8)...` },
                 { sel: '[data-ds="3"]', msg: `🌍 Root server: "Try the .${tld} TLD server"` },
-                { sel: '[data-ds="4"]', msg: `🏷️ .${tld} TLD server: "The authoritative server for ${domain} is ns1.${domain}"` },
+                { sel: '[data-ds="4"]', msg: `🏷️ .${tld} TLD server: "Authoritative server for ${domain} is ns1.${domain}"` },
                 { sel: '[data-ds="5"]', msg: `📖 Authoritative server: "${domain} → ${ip}"` },
             ];
             for (const s of steps) {
-                const node = sim.querySelector(s.sel);
-                if (node) node.classList.add('demo-node-active');
+                await animatePacket(sim, pkt, [s.sel], 700);
                 log.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
                 log.scrollTop = log.scrollHeight;
-                await sleep(800);
+                await sleep(200);
             }
             log.innerHTML += `<div class="demo-log-line"><strong>✅ Resolved: ${domain} → ${ip}</strong></div>`;
             log.scrollTop = log.scrollHeight;
-            await sleep(1500);
-            sim.querySelectorAll('.demo-dns-step').forEach(s => s.classList.remove('demo-node-active'));
+            pkt.style.opacity = '0';
+            await sleep(1000);
+            sim.querySelectorAll('.demo-node').forEach(s => s.classList.remove('demo-node-active'));
             this.disabled = false;
         });
     }
@@ -874,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>What is MX?</strong> MX stands for <strong>Mail Exchanger</strong>. It's a special DNS record that tells the internet "mail for this domain should go to this server." Without MX records, the sender's server wouldn't know where to deliver your email!</p>
             <p><strong>Example:</strong> <code>dig college.edu MX</code> → <code>10 mail.college.edu</code> (priority 10, deliver to mail.college.edu)</p>
         </div>
-        <div class="demo-network-path" id="smtp-sim">
+        <div class="demo-network-path" id="smtp-sim" style="position:relative">
             <div class="demo-node demo-n-device" data-sm="0">📧<span>Sender</span></div>
             <div class="demo-arrow">→</div>
             <div class="demo-node demo-n-router" data-sm="1">📮<span>Sender's<br>SMTP Server</span></div>
@@ -884,6 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="demo-node demo-n-router" data-sm="3">📬<span>Recipient's<br>SMTP Server</span></div>
             <div class="demo-arrow">→</div>
             <div class="demo-node demo-n-device" data-sm="4">📥<span>Inbox</span></div>
+            <div class="demo-packet" id="smtp-pkt">📧</div>
         </div>
         <div class="demo-log" id="smtp-log"></div>
         <button class="demo-btn" id="smtp-btn">▶ Send Email</button>
@@ -894,6 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
         smtpBtn.addEventListener('click', async function () {
             this.disabled = true;
             const sim = document.getElementById('smtp-sim');
+            const pkt = document.getElementById('smtp-pkt');
             const log = document.getElementById('smtp-log');
             log.innerHTML = '';
             sim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active'));
@@ -901,18 +905,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 { sel: '[data-sm="0"]', msg: '📧 User clicks Send on "Hello from student@school.edu → teacher@college.edu"' },
                 { sel: '[data-sm="1"]', msg: '📮 Email client connects to school.edu SMTP server on port 587 (authenticated submission)' },
                 { sel: '[data-sm="2"]', msg: '🌐 DNS MX lookup: "What server handles mail for college.edu?" → Answer: mail.college.edu (priority 10)' },
-                { sel: '[data-sm="2"]', msg: '💡 MX = Mail Exchanger record — it tells the internet which server receives email for a domain' },
                 { sel: '[data-sm="3"]', msg: '📬 school.edu server connects to mail.college.edu on port 25 and relays the message via SMTP' },
                 { sel: '[data-sm="4"]', msg: '📥 mail.college.edu stores the email. Teacher opens inbox via IMAP/POP3 and reads it!' },
             ];
             for (const s of steps) {
-                const node = sim.querySelector(s.sel);
-                if (node) node.classList.add('demo-node-active');
+                await animatePacket(sim, pkt, [s.sel], 750);
                 log.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
                 log.scrollTop = log.scrollHeight;
-                await sleep(1000);
+                await sleep(200);
             }
-            await sleep(500);
+            pkt.style.opacity = '0';
+            await sleep(400);
             sim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active'));
             this.disabled = false;
         });
@@ -2425,6 +2428,950 @@ document.addEventListener('DOMContentLoaded', () => {
             await sleep(400);
             steps.forEach(id => document.getElementById(id).classList.remove('sds-done'));
             this.disabled = false;
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════
+       5. AD DOMAINS & IDENTITY DEMOS
+       ═══════════════════════════════════════════════════ */
+
+    /* ── What is a Domain — Domain Join Simulator ── */
+    createDemo('what-is-domain', `
+        <p class="demo-desc">Simulate what happens when a PC joins a Windows domain vs stays in a workgroup.</p>
+        <div class="demo-controls">
+            <label class="demo-radio"><input type="radio" name="domain-mode" value="workgroup" checked> Workgroup Mode</label>
+            <label class="demo-radio"><input type="radio" name="domain-mode" value="domain"> Domain Mode</label>
+        </div>
+        <div class="demo-domain-flow" id="domain-flow-sim">
+            <div class="demo-node demo-n-device" id="df-pc">💻<span>PC</span></div>
+            <div class="demo-arrow" id="df-arrow">→</div>
+            <div class="demo-node demo-n-router" id="df-auth">🗄️<span>Local SAM</span></div>
+            <div class="demo-arrow">→</div>
+            <div class="demo-node demo-n-device" id="df-resource">📁<span>Resource</span></div>
+        </div>
+        <div class="demo-log" id="domain-log"></div>
+        <button class="demo-btn" id="domain-login-btn">▶ Simulate Login</button>
+    `);
+
+    document.querySelectorAll('input[name="domain-mode"]').forEach(r => {
+        r.addEventListener('change', () => {
+            const authNode = document.getElementById('df-auth');
+            if (r.value === 'domain') authNode.innerHTML = '🏢<span>Domain Controller</span>';
+            else authNode.innerHTML = '🗄️<span>Local SAM</span>';
+            document.getElementById('domain-log').innerHTML = '';
+        });
+    });
+
+    const domainLoginBtn = document.getElementById('domain-login-btn');
+    if (domainLoginBtn) {
+        domainLoginBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            const mode = document.querySelector('input[name="domain-mode"]:checked').value;
+            const log = document.getElementById('domain-log');
+            log.innerHTML = '';
+
+            if (mode === 'workgroup') {
+                const steps = [
+                    '💻 User types username: <code>john</code> on PC-01',
+                    '🗄️ PC checks its own local SAM database for user "john"',
+                    '✅ Found! Login granted — but only on THIS machine',
+                    '📁 Tries to access \\\\FILE-SERVER\\Share ...',
+                    '❌ Access denied — FILE-SERVER has no account for "john"',
+                    '⚠️ Must create a matching local account on every machine!',
+                ];
+                for (const msg of steps) {
+                    log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+                    log.scrollTop = log.scrollHeight;
+                    await sleep(700);
+                }
+            } else {
+                const steps = [
+                    '💻 User types domain credentials: <code>CORP\\john</code> on PC-01',
+                    '🏢 PC contacts Domain Controller at <code>dc01.corp.contoso.com</code>',
+                    '🔐 DC validates credentials using Kerberos protocol',
+                    '🎫 DC issues a Kerberos TGT (Ticket Granting Ticket) to the user',
+                    '📋 GPOs downloaded and applied: desktop settings, drive maps, software',
+                    '📁 User accesses \\\\FILE-SERVER\\Share — Kerberos service ticket presented',
+                    '✅ Access granted! Same login works on ANY domain-joined machine',
+                ];
+                for (const msg of steps) {
+                    log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+                    log.scrollTop = log.scrollHeight;
+                    await sleep(700);
+                }
+            }
+            this.disabled = false;
+        });
+    }
+
+    /* ── Azure AD vs On-Prem AD comparison ── */
+    createDemo('azure-ad-domain', `
+        <p class="demo-desc">Click a scenario to see how Azure AD and On-Prem AD handle the authentication differently.</p>
+        <div class="demo-controls">
+            <button class="demo-btn demo-btn-sm" id="aad-onprem-btn">🏢 On-Prem AD Login</button>
+            <button class="demo-btn demo-btn-sm" id="aad-cloud-btn">☁️ Azure AD Login</button>
+            <button class="demo-btn demo-btn-sm" id="aad-hybrid-btn">🔄 Hybrid (Synced) Login</button>
+        </div>
+        <div class="demo-log" id="aad-log"></div>
+    `);
+
+    async function runAadScenario(steps, logId) {
+        const log = document.getElementById(logId);
+        log.innerHTML = '';
+        for (const msg of steps) {
+            log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+            log.scrollTop = log.scrollHeight;
+            await sleep(650);
+        }
+    }
+
+    const aadOnpremBtn = document.getElementById('aad-onprem-btn');
+    if (aadOnpremBtn) {
+        aadOnpremBtn.addEventListener('click', () => runAadScenario([
+            '💻 User at office PC presses Ctrl+Alt+Del → types CORP\\alice',
+            '🔌 PC must reach Domain Controller on LAN (line-of-sight required)',
+            '🔐 DC authenticates with <strong>Kerberos</strong> (port 88)',
+            '📋 LDAP query (port 389) fetches group memberships and GPOs',
+            '🎫 Kerberos TGT issued — valid for 10 hours',
+            '✅ Login complete. Protocol: Kerberos. Directory: AD DS. GPO applied.',
+        ], 'aad-log'));
+    }
+
+    const aadCloudBtn = document.getElementById('aad-cloud-btn');
+    if (aadCloudBtn) {
+        aadCloudBtn.addEventListener('click', () => runAadScenario([
+            '💻 User on remote laptop accesses Microsoft 365 via browser',
+            '🌐 Browser redirected to <code>login.microsoftonline.com</code>',
+            '🔐 Azure AD validates credentials using <strong>OpenID Connect</strong> over HTTPS',
+            '📱 MFA challenge sent — user approves on Authenticator app',
+            '🎟️ Azure AD issues JWT <strong>access token</strong> (valid 1 hour) + refresh token',
+            '📋 Intune MDM policies applied (no GPO — cloud-native policy)',
+            '✅ Login complete. No DC needed. Works from anywhere on the internet.',
+        ], 'aad-log'));
+    }
+
+    const aadHybridBtn = document.getElementById('aad-hybrid-btn');
+    if (aadHybridBtn) {
+        aadHybridBtn.addEventListener('click', () => runAadScenario([
+            '🔄 <strong>Entra Connect</strong> has already synced users from on-prem AD to Azure AD',
+            '💻 User logs into Windows with on-prem domain account (Kerberos on LAN)',
+            '🔗 Device is Hybrid Azure AD Joined — registered with both AD and Azure AD',
+            '🌐 User opens Outlook (Microsoft 365) → browser redirects to Azure AD',
+            '🎫 <strong>Seamless SSO</strong>: on-prem Kerberos ticket exchanged for Azure AD token',
+            '✅ No second login required — single sign-on across on-prem and cloud!',
+            '📋 On-prem GPOs apply for Windows settings; Intune applies for cloud apps',
+        ], 'aad-log'));
+    }
+
+    /* ── Workgroup vs Domain ── */
+    createDemo('workgroup-vs-domain', `
+        <p class="demo-desc">Try adding a user in a <strong>Workgroup</strong> vs a <strong>Domain</strong> environment and see the operational difference.</p>
+        <div class="demo-controls">
+            <button class="demo-btn demo-btn-sm" id="wg-adduser-btn">👤 Add User (Workgroup)</button>
+            <button class="demo-btn demo-btn-sm" id="dom-adduser-btn">👤 Add User (Domain)</button>
+        </div>
+        <div class="demo-log" id="wgdom-log"></div>
+    `);
+
+    const wgAddBtn = document.getElementById('wg-adduser-btn');
+    if (wgAddBtn) {
+        wgAddBtn.addEventListener('click', async function() {
+            const log = document.getElementById('wgdom-log');
+            log.innerHTML = '';
+            const steps = [
+                '⚙️ <strong>WORKGROUP</strong>: IT admin must add "bob" on PC-01',
+                '   ✦ Control Panel → User Accounts → Add user on PC-01',
+                '   ✦ Must repeat on PC-02, PC-03, FILE-SERVER, PRINTER, ...',
+                '📊 10 computers × 1 user = <strong>10 separate operations</strong>',
+                '❌ Bob calls IT because he forgot his password on PC-04',
+                '   → IT must reset on THAT specific machine only',
+                '⚠️ No central audit log. No policy enforcement. Inconsistent settings.',
+            ];
+            for (const msg of steps) {
+                log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(650);
+            }
+        });
+    }
+
+    const domAddBtn = document.getElementById('dom-adduser-btn');
+    if (domAddBtn) {
+        domAddBtn.addEventListener('click', async function() {
+            const log = document.getElementById('wgdom-log');
+            log.innerHTML = '';
+            const steps = [
+                '⚙️ <strong>DOMAIN</strong>: IT admin adds "bob" once in Active Directory',
+                '   ✦ <code>New-ADUser -Name "Bob Smith" -SamAccountName "bsmith" -Enabled $true</code>',
+                '📊 1 operation in AD → Bob can log into ALL 10 domain-joined machines',
+                '📋 GPOs automatically apply: wallpaper, drive maps, software, firewall rules',
+                '🔑 Bob forgets password → IT resets in AD: <code>Set-ADAccountPassword -Identity bsmith</code>',
+                '   → Works everywhere instantly. No need to touch individual machines.',
+                '✅ Central audit log in Event Viewer / SIEM. Full policy enforcement.',
+            ];
+            for (const msg of steps) {
+                log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(650);
+            }
+        });
+    }
+
+    /* ── AD Architecture Explorer ── */
+    createDemo('ad-architecture', `
+        <p class="demo-desc">Click a layer of the AD hierarchy to understand what it does and what objects it contains.</p>
+        <div class="demo-ad-tree" id="ad-arch-tree">
+            <div class="demo-ad-layer" id="adl-forest" data-layer="forest">🌲 Forest: contoso.com</div>
+            <div class="demo-ad-layer" id="adl-tree" data-layer="tree" style="margin-left:1.5rem">🌳 Tree: corp.contoso.com</div>
+            <div class="demo-ad-layer" id="adl-domain" data-layer="domain" style="margin-left:3rem">🏢 Domain: corp.contoso.com</div>
+            <div class="demo-ad-layer" id="adl-ou" data-layer="ou" style="margin-left:4.5rem">📁 OU: Finance</div>
+            <div class="demo-ad-layer" id="adl-user" data-layer="user" style="margin-left:6rem">👤 User: alice</div>
+        </div>
+        <div class="demo-log" id="ad-arch-log"></div>
+    `);
+
+    const adLayerInfo = {
+        forest: [
+            '🌲 <strong>Forest</strong> — Top-level container. Security boundary.',
+            '   Shares: schema (object definitions), global catalog, and configuration partition.',
+            '   All domains within this forest trust each other.',
+            '   Forest trusts connect separate forests (separate security boundaries).',
+            '   FSMO roles: Schema Master, Domain Naming Master (one each per forest).',
+        ],
+        tree: [
+            '🌳 <strong>Tree</strong> — A group of domains with contiguous DNS namespace.',
+            '   Example: contoso.com → corp.contoso.com → us.corp.contoso.com',
+            '   Parent and child domains have automatic two-way transitive trusts.',
+            '   Separate trees (e.g., fabrikam.com) can join the same forest.',
+        ],
+        domain: [
+            '🏢 <strong>Domain</strong> — Core administrative unit. Has its own DC(s).',
+            '   Contains: users, computers, groups, OUs, and policies.',
+            '   Domain-wide security policies: password policy, account lockout.',
+            '   FSMO roles: PDC Emulator, RID Master, Infrastructure Master (per domain).',
+            '   Clients must be able to reach a DC to log in.',
+        ],
+        ou: [
+            '📁 <strong>Organizational Unit (OU)</strong> — A container inside a domain.',
+            '   Used to organize objects by department, location, or type.',
+            '   GPOs are linked to OUs → settings flow down to child OUs.',
+            '   Delegation: you can give a help desk admin control over just one OU.',
+            '   Example: OU=Finance contains users in the Finance department.',
+        ],
+        user: [
+            '👤 <strong>User Object</strong> — Represents one person\'s account in AD.',
+            '   Key attributes: sAMAccountName, UPN (alice@corp.contoso.com), displayName.',
+            '   Security principal: has a unique SID used for permissions.',
+            '   Member of security groups → inherits resource access.',
+            '   Distinguished Name: CN=Alice,OU=Finance,DC=corp,DC=contoso,DC=com',
+        ],
+    };
+
+    document.querySelectorAll('.demo-ad-layer').forEach(layer => {
+        layer.style.cursor = 'pointer';
+        layer.style.padding = '6px 12px';
+        layer.style.margin = '4px 0';
+        layer.style.borderRadius = '6px';
+        layer.style.transition = 'background 0.2s';
+        layer.addEventListener('click', function() {
+            document.querySelectorAll('.demo-ad-layer').forEach(l => l.classList.remove('demo-node-active'));
+            this.classList.add('demo-node-active');
+            const info = adLayerInfo[this.dataset.layer];
+            const log = document.getElementById('ad-arch-log');
+            log.innerHTML = info.map(l => `<div class="demo-log-line">${l}</div>`).join('');
+        });
+    });
+
+    /* ── LDAP Query Builder ── */
+    createDemo('ldap-query', `
+        <p class="demo-desc">Build and test LDAP filter expressions. Select criteria to construct a query.</p>
+        <div class="demo-ldap-builder">
+            <div class="demo-controls" style="flex-wrap:wrap;gap:0.4rem">
+                <label style="font-size:0.85rem"><strong>Object type:</strong></label>
+                <select id="ldap-objtype" class="demo-select">
+                    <option value="user">User</option>
+                    <option value="computer">Computer</option>
+                    <option value="group">Group</option>
+                </select>
+                <label style="font-size:0.85rem"><strong>Condition:</strong></label>
+                <select id="ldap-cond" class="demo-select">
+                    <option value="any">Any (no extra filter)</option>
+                    <option value="enabled">Enabled accounts only</option>
+                    <option value="disabled">Disabled accounts only</option>
+                    <option value="name">Name starts with...</option>
+                    <option value="dept">Department equals...</option>
+                    <option value="locked">Locked-out accounts</option>
+                </select>
+                <input type="text" id="ldap-extra" placeholder="value (for name/dept)" class="demo-input" style="max-width:160px">
+            </div>
+            <button class="demo-btn demo-btn-sm" id="ldap-build-btn">⚙️ Build Filter</button>
+        </div>
+        <div class="demo-log" id="ldap-filter-result" style="min-height:60px;font-family:monospace"></div>
+        <div class="demo-log" id="ldap-filter-explain" style="margin-top:0.4rem"></div>
+    `);
+
+    const ldapBuildBtn = document.getElementById('ldap-build-btn');
+    if (ldapBuildBtn) {
+        ldapBuildBtn.addEventListener('click', () => {
+            const objType = document.getElementById('ldap-objtype').value;
+            const cond = document.getElementById('ldap-cond').value;
+            const extra = document.getElementById('ldap-extra').value.trim() || '*';
+            const res = document.getElementById('ldap-filter-result');
+            const exp = document.getElementById('ldap-filter-explain');
+
+            const objClass = { user: 'user', computer: 'computer', group: 'group' }[objType];
+            let filter = `(objectClass=${objClass})`;
+            let explain = [`<div class="demo-log-line">🔵 <code>(objectClass=${objClass})</code> — match all ${objType} objects</div>`];
+
+            if (cond === 'enabled') {
+                filter = `(&(objectClass=${objClass})(!(userAccountControl:1.2.840.113556.1.4.803:=2)))`;
+                explain.push('<div class="demo-log-line">🟢 <code>!(userAccountControl:...=2)</code> — exclude disabled accounts (bit 2 = disabled flag)</div>');
+            } else if (cond === 'disabled') {
+                filter = `(&(objectClass=${objClass})(userAccountControl:1.2.840.113556.1.4.803:=2))`;
+                explain.push('<div class="demo-log-line">🔴 <code>userAccountControl:...=2</code> — match accounts with disabled flag (bit 2) set</div>');
+            } else if (cond === 'name') {
+                const val = document.getElementById('ldap-extra').value.trim() || 'John';
+                filter = `(&(objectClass=${objClass})(cn=${val}*))`;
+                explain.push(`<div class="demo-log-line">🔵 <code>(cn=${val}*)</code> — cn (Common Name) starts with "${val}" — the <code>*</code> is a wildcard</div>`);
+            } else if (cond === 'dept') {
+                const val = document.getElementById('ldap-extra').value.trim() || 'Finance';
+                filter = `(&(objectClass=${objClass})(department=${val}))`;
+                explain.push(`<div class="demo-log-line">🟡 <code>(department=${val})</code> — exact match on department attribute</div>`);
+            } else if (cond === 'locked') {
+                filter = `(&(objectClass=${objClass})(lockoutTime>=1))`;
+                explain.push('<div class="demo-log-line">🔴 <code>(lockoutTime>=1)</code> — lockoutTime > 0 means account is currently locked out</div>');
+            }
+
+            res.innerHTML = `<div class="demo-log-line" style="color:var(--clr-accent,#2563eb);font-weight:600">Filter: ${filter}</div>`;
+            exp.innerHTML = '<div class="demo-log-line"><strong>How to read it:</strong></div>' + explain.join('') +
+                '<div class="demo-log-line">🔍 <code>&amp;(…)(…)</code> = AND both conditions must match</div>' +
+                `<div class="demo-log-line">📌 Full PowerShell: <code>Get-ADObject -LDAPFilter "${filter}" -Properties *</code></div>`;
+        });
+    }
+
+    /* ── DC Replication Simulator ── */
+    createDemo('dc-sync', `
+        <p class="demo-desc">Simulate Active Directory replication between Domain Controllers. Watch how a change propagates.</p>
+        <div class="demo-dc-grid" id="dc-sim">
+            <div class="demo-node" id="dc1" style="background:#e3f2fd;border:2px solid #1976d2;padding:0.6rem 1rem;border-radius:8px">
+                🖥️ <strong>DC1</strong><br><small id="dc1-usn">USN: 1000</small><br><small id="dc1-status">✅ Up to date</small>
+            </div>
+            <div class="demo-node" id="dc2" style="background:#e8f5e9;border:2px solid #388e3c;padding:0.6rem 1rem;border-radius:8px">
+                🖥️ <strong>DC2</strong><br><small id="dc2-usn">USN: 1000</small><br><small id="dc2-status">✅ Up to date</small>
+            </div>
+            <div class="demo-node" id="dc3" style="background:#fff3e0;border:2px solid #f57c00;padding:0.6rem 1rem;border-radius:8px">
+                🖥️ <strong>DC3</strong><br><small id="dc3-usn">USN: 1000</small><br><small id="dc3-status">✅ Up to date</small>
+            </div>
+        </div>
+        <div class="demo-controls" style="margin-top:0.8rem">
+            <button class="demo-btn demo-btn-sm" id="dc-change-btn">➕ Create User on DC1</button>
+            <button class="demo-btn demo-btn-sm" id="dc-replicate-btn">🔄 Run Replication</button>
+            <button class="demo-btn demo-btn-sm" id="dc-reset-btn">↺ Reset</button>
+        </div>
+        <div class="demo-log" id="dc-log"></div>
+    `);
+
+    let dcState = { dc1: 1000, dc2: 1000, dc3: 1000, pendingChange: false };
+
+    const dcChangeBtn = document.getElementById('dc-change-btn');
+    if (dcChangeBtn) {
+        dcChangeBtn.addEventListener('click', function() {
+            if (dcState.pendingChange) return;
+            dcState.dc1 = 1001;
+            dcState.pendingChange = true;
+            document.getElementById('dc1-usn').textContent = 'USN: 1001';
+            document.getElementById('dc1-status').textContent = '🆕 Change made here';
+            document.getElementById('dc2-status').textContent = '⏳ Behind (USN 1000)';
+            document.getElementById('dc3-status').textContent = '⏳ Behind (USN 1000)';
+            const log = document.getElementById('dc-log');
+            log.innerHTML += `<div class="demo-log-line">🆕 New user "charlie" created on DC1 → DC1 USN incremented to <strong>1001</strong></div>`;
+            log.innerHTML += `<div class="demo-log-line">📢 DC1 sends change notification to replication partners (within 15 seconds intra-site)</div>`;
+            log.scrollTop = log.scrollHeight;
+        });
+    }
+
+    const dcReplicateBtn = document.getElementById('dc-replicate-btn');
+    if (dcReplicateBtn) {
+        dcReplicateBtn.addEventListener('click', async function() {
+            if (!dcState.pendingChange) {
+                const log = document.getElementById('dc-log');
+                log.innerHTML += `<div class="demo-log-line">ℹ️ No pending changes to replicate. Create a change first!</div>`;
+                return;
+            }
+            this.disabled = true;
+            const log = document.getElementById('dc-log');
+
+            // DC1 → DC2
+            document.getElementById('dc2').style.border = '2px solid #1976d2';
+            log.innerHTML += `<div class="demo-log-line">🔄 DC1 → DC2: Sending update (1 object, 1 attribute changed)</div>`;
+            await sleep(800);
+            dcState.dc2 = 1001;
+            document.getElementById('dc2-usn').textContent = 'USN: 1001';
+            document.getElementById('dc2-status').textContent = '✅ Replicated';
+            log.innerHTML += `<div class="demo-log-line">✅ DC2 applied change → "charlie" account now exists on DC2 (USN 1001)</div>`;
+            log.scrollTop = log.scrollHeight;
+            await sleep(600);
+
+            // DC1 → DC3
+            document.getElementById('dc3').style.border = '2px solid #1976d2';
+            log.innerHTML += `<div class="demo-log-line">🔄 DC1 → DC3: Sending update (inter-site link — compressed)</div>`;
+            await sleep(900);
+            dcState.dc3 = 1001;
+            document.getElementById('dc3-usn').textContent = 'USN: 1001';
+            document.getElementById('dc3-status').textContent = '✅ Replicated';
+            log.innerHTML += `<div class="demo-log-line">✅ DC3 applied change → "charlie" account now exists on DC3 (USN 1001)</div>`;
+            log.scrollTop = log.scrollHeight;
+            await sleep(400);
+
+            document.getElementById('dc1-status').textContent = '✅ Up to date';
+            dcState.pendingChange = false;
+            log.innerHTML += `<div class="demo-log-line">🎉 All DCs are in sync! Any user can now log in from any site.</div>`;
+            log.scrollTop = log.scrollHeight;
+            this.disabled = false;
+        });
+    }
+
+    const dcResetBtn = document.getElementById('dc-reset-btn');
+    if (dcResetBtn) {
+        dcResetBtn.addEventListener('click', () => {
+            dcState = { dc1: 1000, dc2: 1000, dc3: 1000, pendingChange: false };
+            ['dc1','dc2','dc3'].forEach(id => {
+                document.getElementById(id + '-usn').textContent = 'USN: 1000';
+                document.getElementById(id + '-status').textContent = '✅ Up to date';
+            });
+            document.getElementById('dc2').style.border = '2px solid #388e3c';
+            document.getElementById('dc3').style.border = '2px solid #f57c00';
+            document.getElementById('dc-log').innerHTML = '';
+        });
+    }
+
+    /* ── GPO Simulator ── */
+    createDemo('gpo', `
+        <p class="demo-desc">Simulate GPO processing. Link policies to different levels and watch LSDOU order resolve conflicts.</p>
+        <div class="demo-gpo-builder">
+            <table style="width:100%;font-size:0.85rem">
+                <thead><tr><th>Level</th><th>Policy Name</th><th>Password Min Length</th><th>USB Drives</th></tr></thead>
+                <tbody>
+                    <tr><td>Local</td><td>Local Policy</td><td><input type="number" id="gpo-local-pwd" value="6" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-local-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block">Block</option></select></td></tr>
+                    <tr><td>Domain</td><td>Corp Security</td><td><input type="number" id="gpo-domain-pwd" value="12" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-domain-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block" selected>Block</option></select></td></tr>
+                    <tr><td>OU: Finance</td><td>Finance Policy</td><td><input type="number" id="gpo-ou-pwd" value="16" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-ou-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block" selected>Block</option></select></td></tr>
+                </tbody>
+            </table>
+            <button class="demo-btn demo-btn-sm" id="gpo-calc-btn" style="margin-top:0.6rem">⚙️ Calculate Effective Policy (LSDOU)</button>
+        </div>
+        <div class="demo-log" id="gpo-result-log"></div>
+    `);
+
+    const gpoCalcBtn = document.getElementById('gpo-calc-btn');
+    if (gpoCalcBtn) {
+        gpoCalcBtn.addEventListener('click', async function() {
+            const localPwd = parseInt(document.getElementById('gpo-local-pwd').value);
+            const domainPwd = parseInt(document.getElementById('gpo-domain-pwd').value);
+            const ouPwd = parseInt(document.getElementById('gpo-ou-pwd').value);
+            const localUsb = document.getElementById('gpo-local-usb').value;
+            const domainUsb = document.getElementById('gpo-domain-usb').value;
+            const ouUsb = document.getElementById('gpo-ou-usb').value;
+
+            const log = document.getElementById('gpo-result-log');
+            log.innerHTML = '';
+
+            const steps = [
+                `1️⃣ <strong>Local Policy</strong> applied first → min password: ${localPwd}, USB: ${localUsb}`,
+                `2️⃣ <strong>Site GPO</strong> — none configured in this example`,
+                `3️⃣ <strong>Domain GPO</strong> applied → overrides Local: min password: ${domainPwd}, USB: ${domainUsb}`,
+                `4️⃣ <strong>OU GPO</strong> applied last (wins!) → min password: ${ouPwd}, USB: ${ouUsb}`,
+            ];
+
+            for (const s of steps) {
+                log.innerHTML += `<div class="demo-log-line">${s}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(600);
+            }
+
+            // Effective result
+            const effPwd = ouPwd; // OU wins
+            const effUsb = ouUsb;
+            log.innerHTML += `<div class="demo-log-line" style="background:#e8f5e9;border-left:3px solid #388e3c;padding:4px 8px;margin-top:4px">
+                ✅ <strong>Effective Policy for FinanceOU users:</strong><br>
+                &nbsp;&nbsp;• Minimum password length: <strong>${effPwd} characters</strong><br>
+                &nbsp;&nbsp;• USB drives: <strong>${effUsb === 'block' ? '🚫 Blocked' : '✅ Allowed'}</strong><br>
+                &nbsp;&nbsp;<em>Later-processed GPOs win. OU > Domain > Site > Local.</em>
+            </div>`;
+            log.scrollTop = log.scrollHeight;
+        });
+    }
+
+    /* ── Local Security Policy ── */
+    createDemo('local-security-policy', `
+        <p class="demo-desc">Configure a local password policy and see how it would look as a <code>secedit</code> export or <code>net accounts</code> output.</p>
+        <div class="demo-controls" style="flex-wrap:wrap;gap:0.6rem;align-items:center">
+            <label style="font-size:0.85rem">Min password length: <input type="number" id="lsp-minpwd" value="12" min="0" max="20" class="demo-input demo-input-sm"></label>
+            <label style="font-size:0.85rem">Max password age (days): <input type="number" id="lsp-maxage" value="90" min="0" max="999" class="demo-input demo-input-sm"></label>
+            <label style="font-size:0.85rem">Lockout threshold: <input type="number" id="lsp-lockout" value="5" min="0" max="50" class="demo-input demo-input-sm"></label>
+            <label style="font-size:0.85rem">Lockout duration (min): <input type="number" id="lsp-lockdur" value="30" min="0" max="9999" class="demo-input demo-input-sm"></label>
+        </div>
+        <button class="demo-btn demo-btn-sm" id="lsp-gen-btn" style="margin-top:0.6rem">⚙️ Generate Policy Output</button>
+        <div class="demo-log" id="lsp-log" style="font-family:monospace;font-size:0.82rem"></div>
+    `);
+
+    const lspGenBtn = document.getElementById('lsp-gen-btn');
+    if (lspGenBtn) {
+        lspGenBtn.addEventListener('click', () => {
+            const min = document.getElementById('lsp-minpwd').value;
+            const max = document.getElementById('lsp-maxage').value;
+            const lock = document.getElementById('lsp-lockout').value;
+            const dur = document.getElementById('lsp-lockdur').value;
+            const log = document.getElementById('lsp-log');
+            log.innerHTML = `
+<div class="demo-log-line"><strong>net accounts output:</strong></div>
+<div class="demo-log-line">Force user logoff how long after time expires?: Never</div>
+<div class="demo-log-line">Minimum password age (days): 1</div>
+<div class="demo-log-line">Maximum password age (days): ${max}</div>
+<div class="demo-log-line">Minimum password length: ${min}</div>
+<div class="demo-log-line">Length of password history maintained: 24</div>
+<div class="demo-log-line">Lockout threshold: ${lock}</div>
+<div class="demo-log-line">Lockout duration (minutes): ${dur}</div>
+<div class="demo-log-line">Lockout observation window (minutes): ${dur}</div>
+<div class="demo-log-line">&nbsp;</div>
+<div class="demo-log-line"><strong>secedit /export equivalent (security template):</strong></div>
+<div class="demo-log-line">[System Access]</div>
+<div class="demo-log-line">MinimumPasswordLength = ${min}</div>
+<div class="demo-log-line">MaximumPasswordAge = ${max}</div>
+<div class="demo-log-line">PasswordComplexity = 1</div>
+<div class="demo-log-line">LockoutBadCount = ${lock}</div>
+<div class="demo-log-line">LockoutDuration = ${dur}</div>
+<div class="demo-log-line">ResetLockoutCount = ${dur}</div>`;
+        });
+    }
+
+    /* ── Local SAM Explorer ── */
+    createDemo('local-sam', `
+        <p class="demo-desc">Explore the Windows Local Security Account Manager (<abbr title="Security Account Manager">SAM</abbr>). Create local users, add them to groups, and inspect what the SAM stores.</p>
+        <div class="demo-controls" style="flex-wrap:wrap;gap:0.6rem;align-items:flex-end">
+            <label style="font-size:0.85rem">Username:<br><input type="text" id="sam-username" value="jsmith" class="demo-input demo-input-sm" maxlength="20"></label>
+            <label style="font-size:0.85rem">Full Name:<br><input type="text" id="sam-fullname" value="John Smith" class="demo-input demo-input-sm" maxlength="30"></label>
+            <label style="font-size:0.85rem">Password:<br><input type="password" id="sam-password" value="P@ssw0rd123" class="demo-input demo-input-sm" maxlength="30"></label>
+            <label style="font-size:0.85rem">Group:<br>
+                <select id="sam-group" class="demo-input demo-input-sm">
+                    <option value="Users">Users</option>
+                    <option value="Administrators">Administrators</option>
+                    <option value="Remote Desktop Users">Remote Desktop Users</option>
+                    <option value="Backup Operators">Backup Operators</option>
+                </select>
+            </label>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem">
+            <button class="demo-btn demo-btn-sm" id="sam-create-btn">➕ New-LocalUser</button>
+            <button class="demo-btn demo-btn-sm" id="sam-add-group-btn">👥 Add-LocalGroupMember</button>
+            <button class="demo-btn demo-btn-sm" id="sam-query-btn">🔍 Query SAM</button>
+            <button class="demo-btn demo-btn-sm" id="sam-clear-btn" style="background:#555">🗑️ Clear</button>
+        </div>
+        <div class="demo-log" id="sam-log" style="font-family:monospace;font-size:0.82rem;margin-top:0.5rem"></div>
+    `);
+
+    (() => {
+        // Internal SAM "database" for this demo session
+        const samDB = {
+            users: [
+                { name: 'Administrator', fullName: 'Built-in Administrator', sid: 'S-1-5-21-XXXX-500', enabled: false, groups: ['Administrators'] },
+                { name: 'Guest',         fullName: 'Built-in Guest',         sid: 'S-1-5-21-XXXX-501', enabled: false, groups: ['Guests'] },
+            ],
+            nextRid: 1001
+        };
+
+        function genSid(rid) {
+            return `S-1-5-21-3842939862-1821680627-2073250560-${rid}`;
+        }
+
+        function ntlmPlaceholder(pwd) {
+            // Show a fake hash illustrating the concept — not a real NTLM hash
+            let h = 0;
+            for (let i = 0; i < pwd.length; i++) h = (Math.imul(31, h) + pwd.charCodeAt(i)) | 0;
+            const hex = Math.abs(h).toString(16).padStart(8, '0');
+            return (hex + hex + hex + hex).substring(0, 32).toUpperCase();
+        }
+
+        function log(msg) {
+            const el = document.getElementById('sam-log');
+            if (!el) return;
+            el.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function getInputs() {
+            return {
+                username: (document.getElementById('sam-username')?.value || '').trim(),
+                fullName: (document.getElementById('sam-fullname')?.value || '').trim(),
+                password: (document.getElementById('sam-password')?.value || '').trim(),
+                group:    (document.getElementById('sam-group')?.value || 'Users'),
+            };
+        }
+
+        const createBtn   = document.getElementById('sam-create-btn');
+        const addGroupBtn = document.getElementById('sam-add-group-btn');
+        const queryBtn    = document.getElementById('sam-query-btn');
+        const clearBtn    = document.getElementById('sam-clear-btn');
+
+        if (createBtn) {
+            createBtn.addEventListener('click', () => {
+                const { username, fullName, password } = getInputs();
+                if (!username) { log('<span style="color:#f87">⚠ Username cannot be empty.</span>'); return; }
+                if (samDB.users.find(u => u.name.toLowerCase() === username.toLowerCase())) {
+                    log(`<span style="color:#f87">⚠ A local account named <strong>${username}</strong> already exists.</span>`); return;
+                }
+                if (password.length < 6) { log('<span style="color:#f87">⚠ Password must be at least 6 characters.</span>'); return; }
+
+                const sid = genSid(samDB.nextRid++);
+                const hash = ntlmPlaceholder(password);
+                samDB.users.push({ name: username, fullName, sid, enabled: true, groups: ['Users'] });
+
+                log(`<span style="color:#7ec8e3">PS C:\\&gt;</span> New-LocalUser -Name "${username}" -FullName "${fullName}" -Password (ConvertTo-SecureString "${password}" -AsPlainText -Force)`);
+                log(`&nbsp;`);
+                log(`Name         : ${username}`);
+                log(`FullName     : ${fullName}`);
+                log(`SID          : ${sid}`);
+                log(`Enabled      : True`);
+                log(`PasswordHash : <span style="color:#ffd54f">${hash}</span> <em style="color:#aaa">(NTLM — stored in SAM hive)</em>`);
+                log(`&nbsp;`);
+                log(`<span style="color:#a5d6a7">✅ User created and added to default group: Users</span>`);
+                log(`<span style="color:#aaa">── Registry path: HKLM\\SAM\\SAM\\Domains\\Account\\Users\\${sid.split('-').pop().padStart(8,'0')}</span>`);
+                log(`&nbsp;`);
+            });
+        }
+
+        if (addGroupBtn) {
+            addGroupBtn.addEventListener('click', () => {
+                const { username, group } = getInputs();
+                if (!username) { log('<span style="color:#f87">⚠ Username cannot be empty.</span>'); return; }
+                const user = samDB.users.find(u => u.name.toLowerCase() === username.toLowerCase());
+                if (!user) { log(`<span style="color:#f87">⚠ User <strong>${username}</strong> not found in SAM. Create the user first.</span>`); return; }
+                if (user.groups.includes(group)) {
+                    log(`<span style="color:#ffd54f">⚠ ${username} is already a member of <strong>${group}</strong>.</span>`); return;
+                }
+                user.groups.push(group);
+
+                log(`<span style="color:#7ec8e3">PS C:\\&gt;</span> Add-LocalGroupMember -Group "${group}" -Member "${username}"`);
+                log(`<span style="color:#a5d6a7">✅ ${username} added to <strong>${group}</strong>.</span>`);
+                if (group === 'Administrators') {
+                    log(`<span style="color:#ffab40">⚠ Security note: Local admin rights grant full control of this machine's SAM and registry.</span>`);
+                }
+                log(`&nbsp;`);
+            });
+        }
+
+        if (queryBtn) {
+            queryBtn.addEventListener('click', () => {
+                log(`<span style="color:#7ec8e3">PS C:\\&gt;</span> Get-LocalUser | Select-Object Name, SID, Enabled`);
+                log(`&nbsp;`);
+                log(`${'Name'.padEnd(22)} ${'SID'.padEnd(44)} Enabled`);
+                log(`${'----'.padEnd(22)} ${'---'.padEnd(44)} -------`);
+                samDB.users.forEach(u => {
+                    log(`${u.name.padEnd(22)} ${u.sid.padEnd(44)} ${u.enabled}`);
+                });
+                log(`&nbsp;`);
+                log(`<span style="color:#7ec8e3">PS C:\\&gt;</span> Get-LocalGroup | Select-Object Name`);
+                log(`&nbsp;`);
+                const allGroups = [...new Set(samDB.users.flatMap(u => u.groups))].sort();
+                allGroups.forEach(g => log(`  ${g}`));
+                log(`&nbsp;`);
+                log(`<span style="color:#aaa">── Physical file: C:\\Windows\\System32\\config\\SAM  (locked while Windows is running)</span>`);
+                log(`<span style="color:#aaa">── Registry hive: HKEY_LOCAL_MACHINE\\SAM  (ACL-protected; SYSTEM only)</span>`);
+                log(`&nbsp;`);
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                const el = document.getElementById('sam-log');
+                if (el) el.innerHTML = '';
+            });
+        }
+    })();
+
+    /* ── IdP Flow Simulator ── */
+    createDemo('what-is-idp', `
+        <p class="demo-desc">Watch the full SSO flow: a user accesses an app that redirects to an Identity Provider for authentication.</p>
+        <div class="demo-network-path" id="idp-sim" style="flex-wrap:wrap;gap:0.5rem;position:relative">
+            <div class="demo-node demo-n-device" id="idp-user">👤<span>User Browser</span></div>
+            <div class="demo-arrow">→</div>
+            <div class="demo-node demo-n-device" id="idp-sp">📱<span>App (SP)</span></div>
+            <div class="demo-arrow">→</div>
+            <div class="demo-node demo-n-router" id="idp-idp">🏢<span>IdP (Azure AD)</span></div>
+            <div class="demo-arrow">→</div>
+            <div class="demo-node demo-n-device" id="idp-mfa">📱<span>MFA</span></div>
+            <div class="demo-packet" id="idp-pkt">🔑</div>
+        </div>
+        <div class="demo-controls" style="margin-top:0.6rem">
+            <label class="demo-radio"><input type="radio" name="idp-protocol" value="oidc" checked> OpenID Connect</label>
+            <label class="demo-radio"><input type="radio" name="idp-protocol" value="saml"> SAML 2.0</label>
+        </div>
+        <div class="demo-log" id="idp-log"></div>
+        <button class="demo-btn" id="idp-flow-btn">▶ Run SSO Flow</button>
+    `);
+
+    const idpFlowBtn = document.getElementById('idp-flow-btn');
+    if (idpFlowBtn) {
+        idpFlowBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            const protocol = document.querySelector('input[name="idp-protocol"]:checked').value;
+            const sim = document.getElementById('idp-sim');
+            const pkt = document.getElementById('idp-pkt');
+            const log = document.getElementById('idp-log');
+            log.innerHTML = '';
+            sim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active'));
+
+            const nodeFlow = protocol === 'oidc'
+                ? ['#idp-user', '#idp-sp', '#idp-idp', '#idp-mfa', '#idp-idp', '#idp-sp', '#idp-user']
+                : ['#idp-user', '#idp-sp', '#idp-idp', '#idp-mfa', '#idp-idp', '#idp-user', '#idp-sp'];
+
+            const oidcMsgs = [
+                '👤 User visits <code>app.example.com/dashboard</code> — not logged in',
+                '📱 App (SP) detects no session → sends OIDC authorization request to IdP',
+                '🏢 Azure AD shows login page. User enters credentials.',
+                '📱 MFA triggered → user approves push notification on Authenticator',
+                '🏢 Azure AD creates <strong>authorization code</strong> → redirects back to app',
+                '📱 App exchanges code for <strong>ID token + access token</strong>',
+                '✅ User is now logged in! Token contains: name, email, roles, tenant',
+            ];
+
+            const samlMsgs = [
+                '👤 User visits <code>app.example.com/dashboard</code> — not logged in',
+                '📱 App generates SAML <strong>AuthnRequest</strong> → redirects browser to IdP',
+                '🏢 Azure AD shows login page. User enters credentials.',
+                '📱 MFA triggered → user approves Authenticator notification',
+                '🏢 Azure AD creates signed <strong>SAML Assertion</strong> (XML)',
+                '🌐 Browser POSTs assertion to app\'s <strong>ACS URL</strong>',
+                '✅ App validates XML signature → session created. Login complete!',
+            ];
+
+            const msgs = protocol === 'oidc' ? oidcMsgs : samlMsgs;
+
+            for (let i = 0; i < nodeFlow.length; i++) {
+                await animatePacket(sim, pkt, [nodeFlow[i]], 700);
+                log.innerHTML += `<div class="demo-log-line">${msgs[i]}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(200);
+            }
+            pkt.style.opacity = '0';
+            this.disabled = false;
+        });
+    }
+
+    /* ── LDAP Protocol Demo ── */
+    createDemo('ldap-protocol', `
+        <p class="demo-desc">Simulate an LDAP bind and search operation against an Active Directory server.</p>
+        <div class="demo-controls" style="flex-wrap:wrap;gap:0.5rem;align-items:center">
+            <label style="font-size:0.85rem">Server: <input type="text" id="ldap-server" value="dc01.corp.contoso.com" class="demo-input" style="min-width:200px"></label>
+            <label class="demo-radio"><input type="radio" name="ldap-port" value="389" checked> LDAP :389</label>
+            <label class="demo-radio"><input type="radio" name="ldap-port" value="636"> LDAPS :636 (TLS)</label>
+        </div>
+        <div class="demo-controls" style="flex-wrap:wrap;gap:0.5rem;align-items:center;margin-top:0.4rem">
+            <label style="font-size:0.85rem">Bind DN: <input type="text" id="ldap-binddn" value="corp\\svc-account" class="demo-input"></label>
+            <label style="font-size:0.85rem">Search filter: <input type="text" id="ldap-filter-in" value="(sAMAccountName=jsmith)" class="demo-input"></label>
+        </div>
+        <button class="demo-btn demo-btn-sm" id="ldap-run-btn" style="margin-top:0.6rem">▶ Run LDAP Query</button>
+        <div class="demo-log" id="ldap-proto-log" style="font-family:monospace;font-size:0.82rem"></div>
+    `);
+
+    const ldapRunBtn = document.getElementById('ldap-run-btn');
+    if (ldapRunBtn) {
+        ldapRunBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            const server = document.getElementById('ldap-server').value || 'dc01.corp.contoso.com';
+            const port = document.querySelector('input[name="ldap-port"]:checked').value;
+            const bindDN = document.getElementById('ldap-binddn').value || 'corp\\svc-account';
+            const filter = document.getElementById('ldap-filter-in').value || '(objectClass=user)';
+            const log = document.getElementById('ldap-proto-log');
+            log.innerHTML = '';
+
+            const steps = [
+                `🔌 TCP connect to <strong>${server}:${port}</strong>`,
+                port === '636' ? '🔒 TLS handshake — certificate verified. Connection encrypted.' : '⚠️ Unencrypted connection (port 389). Consider STARTTLS or LDAPS in production.',
+                `🤝 LDAP Bind Request → authenticating as: <strong>${bindDN}</strong>`,
+                '✅ Bind Response: resultCode=0 (success) — authenticated',
+                `🔍 Search Request:`,
+                `   Base DN: DC=corp,DC=contoso,DC=com`,
+                `   Scope: Subtree (all objects below base)`,
+                `   Filter: <code>${filter}</code>`,
+                `   Attributes requested: displayName, mail, memberOf, userAccountControl`,
+                '📩 Search Response entries returned:',
+                '   DN: CN=John Smith,OU=Finance,DC=corp,DC=contoso,DC=com',
+                '   displayName: John Smith',
+                '   mail: jsmith@corp.contoso.com',
+                '   memberOf: CN=Domain Users,CN=Users,DC=corp,DC=contoso,DC=com',
+                '   userAccountControl: 512 (normal enabled account)',
+                '🏁 Search Done: resultCode=0, 1 entry returned',
+                '🔓 Unbind → TCP connection closed',
+            ];
+
+            for (const s of steps) {
+                log.innerHTML += `<div class="demo-log-line">${s}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(400);
+            }
+            this.disabled = false;
+        });
+    }
+
+    /* ── SAML Flow Visualizer ── */
+    createDemo('saml', `
+        <p class="demo-desc">Step through the SAML 2.0 SP-Initiated SSO flow step by step.</p>
+        <div class="demo-network-path" id="saml-sim" style="flex-wrap:wrap;gap:0.5rem">
+            <div class="demo-node demo-n-device" id="saml-browser">🌐<span>Browser</span></div>
+            <div class="demo-arrow">↔</div>
+            <div class="demo-node demo-n-device" id="saml-sp">📱<span>SP (App)</span></div>
+            <div class="demo-arrow">↔</div>
+            <div class="demo-node demo-n-router" id="saml-idp">🏢<span>IdP</span></div>
+        </div>
+        <div class="demo-log" id="saml-log"></div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem">
+            <button class="demo-btn demo-btn-sm" id="saml-next-btn">▶ Next Step</button>
+            <button class="demo-btn demo-btn-sm" id="saml-reset-btn">↺ Reset</button>
+            <span id="saml-step-counter" style="font-size:0.85rem;align-self:center;color:var(--clr-text-muted,#6b7280)">Step 0 / 6</span>
+        </div>
+    `);
+
+    const samlStepsData = [
+        { actor: 'browser→sp', msg: '👤 <strong>Step 1:</strong> User navigates to <code>https://app.example.com/login</code>. No session found.' },
+        { actor: 'sp→browser', msg: '📱 <strong>Step 2:</strong> SP creates SAML <strong>AuthnRequest</strong> (XML), Base64-encodes it, and 302-redirects browser to IdP:<br>&nbsp;&nbsp;<code>https://login.microsoftonline.com/...?SAMLRequest=PHNhbWxwOlJlc3BvbnNlI...</code>' },
+        { actor: 'browser→idp', msg: '🌐 <strong>Step 3:</strong> Browser follows redirect → arrives at IdP login page. User enters credentials + MFA.' },
+        { actor: 'idp→browser', msg: '🏢 <strong>Step 4:</strong> IdP validates credentials, creates signed <strong>SAML Assertion</strong> (XML):<br>&nbsp;&nbsp;Subject: alice@contoso.com | Attributes: displayName, role=admin | Signature: RSA-SHA256' },
+        { actor: 'browser→sp', msg: '🌐 <strong>Step 5:</strong> Browser auto-POSTs the SAML Response to SP\'s <strong>ACS URL</strong>:<br>&nbsp;&nbsp;<code>POST https://app.example.com/saml/acs</code><br>&nbsp;&nbsp;Body: SAMLResponse=PHNhbWxwOlJlc3BvbnNlI...' },
+        { actor: 'sp', msg: '📱 <strong>Step 6:</strong> SP validates XML signature using IdP\'s public certificate → extracts claims → creates local session.<br>&nbsp;&nbsp;✅ <strong>Login complete!</strong> User sees their dashboard.' },
+    ];
+
+    let samlStep = 0;
+    const samlLog = document.getElementById('saml-log');
+
+    const samlNextBtn = document.getElementById('saml-next-btn');
+    const samlResetBtn = document.getElementById('saml-reset-btn');
+
+    function updateSamlCounter() {
+        const el = document.getElementById('saml-step-counter');
+        if (el) el.textContent = `Step ${samlStep} / ${samlStepsData.length}`;
+    }
+
+    if (samlNextBtn) {
+        samlNextBtn.addEventListener('click', function() {
+            if (samlStep >= samlStepsData.length) return;
+            const s = samlStepsData[samlStep];
+            samlLog.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
+            samlLog.scrollTop = samlLog.scrollHeight;
+            samlStep++;
+            updateSamlCounter();
+            if (samlStep >= samlStepsData.length) this.disabled = true;
+        });
+    }
+    if (samlResetBtn) {
+        samlResetBtn.addEventListener('click', function() {
+            samlStep = 0;
+            samlLog.innerHTML = '';
+            updateSamlCounter();
+            if (samlNextBtn) samlNextBtn.disabled = false;
+        });
+    }
+
+    /* ── OAuth 2.0 Flow Simulator ── */
+    createDemo('oauth', `
+        <p class="demo-desc">Simulate the OAuth 2.0 Authorization Code + PKCE flow. Select a grant type and walk through it.</p>
+        <div class="demo-controls">
+            <label class="demo-radio"><input type="radio" name="oauth-grant" value="authcode" checked> Authorization Code + PKCE</label>
+            <label class="demo-radio"><input type="radio" name="oauth-grant" value="clientcreds"> Client Credentials</label>
+            <label class="demo-radio"><input type="radio" name="oauth-grant" value="device"> Device Code</label>
+        </div>
+        <div class="demo-log" id="oauth-log"></div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem">
+            <button class="demo-btn" id="oauth-run-btn">▶ Run Flow</button>
+            <button class="demo-btn demo-btn-sm" id="oauth-decode-btn">🔍 Decode Sample JWT</button>
+        </div>
+        <div class="demo-log" id="oauth-jwt-log" style="font-family:monospace;font-size:0.8rem;display:none;margin-top:0.4rem"></div>
+    `);
+
+    const oauthGrants = {
+        authcode: [
+            '👤 User clicks "Login with Microsoft" in the web app',
+            '📱 App generates random <strong>code_verifier</strong> and <strong>code_challenge</strong> (PKCE):',
+            '   code_verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"',
+            '   code_challenge = BASE64URL(SHA256(code_verifier))',
+            '🌐 App redirects browser to Azure AD /authorize with: client_id, scope, redirect_uri, code_challenge',
+            '🏢 Azure AD shows login page → user authenticates + MFA',
+            '🔀 Azure AD redirects back: <code>https://app.example.com/callback?code=OAAABAAAAiL9K...</code>',
+            '📱 App sends POST to /token endpoint with: code + code_verifier (proves it\'s the same app)',
+            '🏢 Azure AD validates code_verifier matches code_challenge → issues tokens:',
+            '   • <strong>access_token</strong> (JWT, 1 hour) — for calling APIs',
+            '   • <strong>id_token</strong> (JWT) — confirms user identity (OpenID Connect)',
+            '   • <strong>refresh_token</strong> (90 days) — get new access tokens silently',
+            '✅ App calls Microsoft Graph: <code>GET /v1.0/me</code> with <code>Authorization: Bearer {access_token}</code>',
+        ],
+        clientcreds: [
+            '🤖 Background service/daemon needs to call an API (no user involved)',
+            '📱 Service sends POST to /token with: client_id + client_secret (or certificate)',
+            '🏢 Azure AD validates client credentials',
+            '🔑 Azure AD returns <strong>access_token</strong> (JWT, app permissions only — no user context)',
+            '✅ Service calls API with: <code>Authorization: Bearer {access_token}</code>',
+            '⏱️ Token expires (typically 1 hour) → service requests a new one',
+            'ℹ️ No refresh token in Client Credentials — just re-authenticate each time',
+            '🔒 Best practice: use certificate instead of client_secret for higher security',
+        ],
+        device: [
+            '📺 Device (TV, CLI tool, IoT) cannot open a browser',
+            '📱 Device POSTs to <code>/devicecode</code> endpoint with: client_id + scope',
+            '🏢 Azure AD returns: <strong>device_code</strong>, <strong>user_code</strong>, and verification_uri',
+            '📺 Device displays: "Go to aka.ms/devicelogin and enter code: ABCD-1234"',
+            '👤 User opens another device (phone/laptop), navigates to verification_uri, enters code',
+            '🏢 Azure AD authenticates the user on THAT device → links to the waiting device_code',
+            '📺 Device polls /token every 5 seconds until user completes authentication',
+            '✅ Device receives access_token + refresh_token',
+            '📺 Device can now call APIs on behalf of the authenticated user',
+        ],
+    };
+
+    const oauthRunBtn = document.getElementById('oauth-run-btn');
+    if (oauthRunBtn) {
+        oauthRunBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            const grant = document.querySelector('input[name="oauth-grant"]:checked').value;
+            const log = document.getElementById('oauth-log');
+            log.innerHTML = '';
+            for (const s of oauthGrants[grant]) {
+                log.innerHTML += `<div class="demo-log-line">${s}</div>`;
+                log.scrollTop = log.scrollHeight;
+                await sleep(650);
+            }
+            this.disabled = false;
+        });
+    }
+
+    const oauthDecodeBtn = document.getElementById('oauth-decode-btn');
+    if (oauthDecodeBtn) {
+        oauthDecodeBtn.addEventListener('click', function() {
+            const jwtLog = document.getElementById('oauth-jwt-log');
+            jwtLog.style.display = jwtLog.style.display === 'none' ? '' : 'none';
+            if (jwtLog.style.display !== 'none') {
+                jwtLog.innerHTML = `
+<div class="demo-log-line"><strong>Sample JWT Access Token (decoded):</strong></div>
+<div class="demo-log-line"><span style="color:#1976d2"><strong>Header:</strong></span></div>
+<div class="demo-log-line">{</div>
+<div class="demo-log-line">&nbsp;&nbsp;"typ": "JWT",</div>
+<div class="demo-log-line">&nbsp;&nbsp;"alg": "RS256",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// signing algorithm</div>
+<div class="demo-log-line">&nbsp;&nbsp;"kid": "i6lGk3FZzxRcUb..."&nbsp;// key ID to find public key at JWKS endpoint</div>
+<div class="demo-log-line">}</div>
+<div class="demo-log-line"><span style="color:#388e3c"><strong>Payload (Claims):</strong></span></div>
+<div class="demo-log-line">{</div>
+<div class="demo-log-line">&nbsp;&nbsp;"iss": "https://login.microsoftonline.com/{tenant}/v2.0",</div>
+<div class="demo-log-line">&nbsp;&nbsp;"aud": "https://graph.microsoft.com",&nbsp;&nbsp;// intended audience (the API)</div>
+<div class="demo-log-line">&nbsp;&nbsp;"sub": "AAAAAAAAAAAAAIkzqFVrSaSaFHy782bbtaQ",</div>
+<div class="demo-log-line">&nbsp;&nbsp;"name": "Alice Smith",</div>
+<div class="demo-log-line">&nbsp;&nbsp;"email": "alice@contoso.com",</div>
+<div class="demo-log-line">&nbsp;&nbsp;"roles": ["User.Read", "Mail.ReadBasic"],</div>
+<div class="demo-log-line">&nbsp;&nbsp;"iat": 1752341400,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// issued at (Unix timestamp)</div>
+<div class="demo-log-line">&nbsp;&nbsp;"exp": 1752345000,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// expires at (1 hour later)</div>
+<div class="demo-log-line">&nbsp;&nbsp;"tid": "72f988bf-86f1-..."&nbsp;&nbsp;&nbsp;// tenant ID</div>
+<div class="demo-log-line">}</div>
+<div class="demo-log-line"><span style="color:#f57c00"><strong>Signature:</strong></span> RSA-SHA256 of (header.payload) — verified using IdP's public key at JWKS endpoint</div>
+<div class="demo-log-line">ℹ️ JWT is NOT encrypted — it's only signed. Anyone can base64-decode the payload!</div>
+<div class="demo-log-line">🔒 Always validate: signature, iss (issuer), aud (audience), exp (expiry), tid (tenant)</div>`;
+            }
         });
     }
 
