@@ -2527,183 +2527,510 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ── Azure AD vs On-Prem AD comparison ── */
+    /* ── Azure AD vs On-Prem AD comparison — ANIMATED ── */
     createDemo('azure-ad-domain', `
-        <p class="demo-desc">Click a scenario to see how Azure AD and On-Prem AD handle the authentication differently.</p>
-        <div class="demo-controls">
-            <button class="demo-btn demo-btn-sm" id="aad-onprem-btn">🏢 On-Prem AD Login</button>
-            <button class="demo-btn demo-btn-sm" id="aad-cloud-btn">☁️ Azure AD Login</button>
-            <button class="demo-btn demo-btn-sm" id="aad-hybrid-btn">🔄 Hybrid (Synced) Login</button>
+        <p class="demo-desc">Select a login scenario and watch the animated flow. Each actor lights up as the authentication token travels through the system.</p>
+
+        <div class="demo-controls" style="flex-wrap:wrap;gap:0.5rem">
+            <label class="demo-radio"><input type="radio" name="aad-mode" value="onprem" checked> 🏢 On-Prem AD</label>
+            <label class="demo-radio"><input type="radio" name="aad-mode" value="cloud"> ☁️ Azure AD (Cloud)</label>
+            <label class="demo-radio"><input type="radio" name="aad-mode" value="hybrid"> 🔄 Hybrid (Synced)</label>
         </div>
-        <div class="demo-log" id="aad-log"></div>
+
+        <!-- Animated flow diagram -->
+        <div class="aad-flow-diagram" id="aad-flow-diagram">
+            <!-- On-Prem row -->
+            <div class="aad-flow-row" id="aad-row-onprem">
+                <div class="aad-flow-actor" id="aad-n-client">💻<span>Client PC</span></div>
+                <div class="aad-flow-pipe" id="aad-pipe-1"></div>
+                <div class="aad-flow-actor" id="aad-n-lan">🔌<span>LAN / Switch</span></div>
+                <div class="aad-flow-pipe" id="aad-pipe-2"></div>
+                <div class="aad-flow-actor" id="aad-n-dc">🖥️<span>Domain Controller</span><small>Kerberos · LDAP</small></div>
+                <div class="aad-flow-pipe" id="aad-pipe-3"></div>
+                <div class="aad-flow-actor" id="aad-n-ad">📂<span>AD DS</span><small>Directory</small></div>
+            </div>
+            <!-- Cloud row -->
+            <div class="aad-flow-row" id="aad-row-cloud" style="margin-top:0.6rem">
+                <div class="aad-flow-actor" id="aad-n-browser">🌐<span>Browser</span></div>
+                <div class="aad-flow-pipe" id="aad-pipe-4"></div>
+                <div class="aad-flow-actor" id="aad-n-internet">☁️<span>Internet / HTTPS</span></div>
+                <div class="aad-flow-pipe" id="aad-pipe-5"></div>
+                <div class="aad-flow-actor" id="aad-n-entra">🏢<span>Azure AD / Entra ID</span><small>OpenID Connect · JWT</small></div>
+                <div class="aad-flow-pipe" id="aad-pipe-6"></div>
+                <div class="aad-flow-actor" id="aad-n-mfa">📱<span>MFA / Authenticator</span></div>
+            </div>
+            <!-- Hybrid bridge -->
+            <div class="aad-flow-row aad-flow-bridge" id="aad-row-hybrid" style="margin-top:0.6rem;display:none">
+                <div class="aad-flow-actor" id="aad-n-connect">🔄<span>Entra Connect</span><small>Sync Service</small></div>
+                <div class="aad-flow-pipe aad-pipe-dashed" id="aad-pipe-7"></div>
+                <div class="aad-flow-actor" id="aad-n-intune">📋<span>Intune MDM</span><small>Cloud Policy</small></div>
+                <div class="aad-flow-pipe aad-pipe-dashed" id="aad-pipe-8"></div>
+                <div class="aad-flow-actor" id="aad-n-gpo">📌<span>GPO</span><small>On-Prem Policy</small></div>
+            </div>
+
+            <div class="aad-token-badge" id="aad-token">🎫</div>
+        </div>
+
+        <div class="demo-log" id="aad-log" style="margin-top:0.7rem"></div>
+        <button class="demo-btn" id="aad-run-btn">▶ Run Authentication Flow</button>
     `);
 
-    async function runAadScenario(steps, logId) {
-        const log = document.getElementById(logId);
-        log.innerHTML = '';
-        for (const msg of steps) {
-            log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
-            log.scrollTop = log.scrollHeight;
-            await sleep(650);
+    (() => {
+        const aadRunBtn = document.getElementById('aad-run-btn');
+        if (!aadRunBtn) return;
+
+        const scenarios = {
+            onprem: {
+                actors: ['aad-n-client','aad-n-lan','aad-n-dc','aad-n-ad','aad-n-dc','aad-n-client'],
+                pipes:  ['aad-pipe-1','aad-pipe-2','aad-pipe-3','aad-pipe-3','aad-pipe-1'],
+                token:  '🎫',
+                color:  '#1976d2',
+                msgs: [
+                    '💻 <strong>Client PC</strong>: User presses Ctrl+Alt+Del → enters CORP\\alice credentials',
+                    '🔌 <strong>LAN</strong>: Credential request travels over local network (port 88 Kerberos)',
+                    '🖥️ <strong>Domain Controller</strong>: Validates password hash via AS-REQ / AS-REP exchange',
+                    '📂 <strong>AD DS</strong>: DC queries directory → reads group memberships, account status, GPO links',
+                    '🎫 <strong>DC → Client</strong>: Issues Kerberos TGT (Ticket Granting Ticket) — valid 10 hours',
+                    '✅ <strong>Client PC</strong>: Logged in! GPOs applied. No internet required.',
+                ],
+            },
+            cloud: {
+                actors: ['aad-n-browser','aad-n-internet','aad-n-entra','aad-n-mfa','aad-n-entra','aad-n-browser'],
+                pipes:  ['aad-pipe-4','aad-pipe-5','aad-pipe-6','aad-pipe-6','aad-pipe-4'],
+                token:  '🔑',
+                color:  '#0b7a75',
+                msgs: [
+                    '🌐 <strong>Browser</strong>: User accesses Microsoft 365 from anywhere on the internet',
+                    '☁️ <strong>Internet</strong>: Browser redirected → <code>login.microsoftonline.com</code> via HTTPS',
+                    '🏢 <strong>Azure AD / Entra ID</strong>: Validates credentials using OpenID Connect (OIDC)',
+                    '📱 <strong>MFA</strong>: Push notification sent to Authenticator app → user approves',
+                    '🎟️ <strong>Entra ID → Browser</strong>: Issues JWT access token (1 hr) + refresh token (90 days)',
+                    '✅ <strong>Browser</strong>: Logged in! Intune MDM policies applied. No DC needed anywhere.',
+                ],
+            },
+            hybrid: {
+                actors: ['aad-n-client','aad-n-dc','aad-n-connect','aad-n-entra','aad-n-browser','aad-n-intune','aad-n-gpo'],
+                pipes:  ['aad-pipe-2','aad-pipe-7','aad-pipe-5','aad-pipe-4','aad-pipe-8','aad-pipe-3'],
+                token:  '🔗',
+                color:  '#7b1fa2',
+                msgs: [
+                    '🔄 <strong>Entra Connect</strong>: Continuously syncs user objects from on-prem AD → Azure AD (every 30 min)',
+                    '💻 <strong>Client PC</strong>: User logs in with domain account → Kerberos on LAN (on-prem auth)',
+                    '🔗 <strong>Entra Connect</strong>: Device is Hybrid Joined — registered with both AD DS and Entra ID',
+                    '🏢 <strong>Azure AD</strong>: On-prem Kerberos ticket exchanged for Azure AD token (Seamless SSO)',
+                    '🌐 <strong>Browser</strong>: Accesses Microsoft 365 — no second login prompt (SSO across boundary!)',
+                    '📋 <strong>Intune MDM</strong>: Cloud-delivered policies control app settings, compliance rules',
+                    '📌 <strong>GPO</strong>: On-prem Group Policies still apply for Windows OS-level settings',
+                ],
+            },
+        };
+
+        async function animateAad() {
+            aadRunBtn.disabled = true;
+            const mode = document.querySelector('input[name="aad-mode"]:checked').value;
+            const s = scenarios[mode];
+            const log = document.getElementById('aad-log');
+            const tokenEl = document.getElementById('aad-token');
+            log.innerHTML = '';
+            tokenEl.textContent = s.token;
+            tokenEl.style.color = s.color;
+
+            // Reset all actors
+            document.querySelectorAll('.aad-flow-actor').forEach(n => {
+                n.classList.remove('aad-actor-active','aad-actor-done');
+            });
+            document.querySelectorAll('.aad-flow-pipe, .aad-pipe-dashed').forEach(p => {
+                p.classList.remove('aad-pipe-active');
+            });
+
+            // Show/hide hybrid bridge row
+            const bridgeRow = document.getElementById('aad-row-hybrid');
+            if (bridgeRow) bridgeRow.style.display = mode === 'hybrid' ? 'flex' : 'none';
+
+            tokenEl.style.opacity = '0';
+
+            for (let i = 0; i < s.actors.length; i++) {
+                const actorEl = document.getElementById(s.actors[i]);
+                if (actorEl) {
+                    document.querySelectorAll('.aad-flow-actor').forEach(n => n.classList.remove('aad-actor-active'));
+                    actorEl.classList.add('aad-actor-active');
+
+                    // Animate the token to this actor
+                    const diag = document.getElementById('aad-flow-diagram');
+                    if (diag && tokenEl) {
+                        const dRect = diag.getBoundingClientRect();
+                        const aRect = actorEl.getBoundingClientRect();
+                        tokenEl.style.left = (aRect.left - dRect.left + aRect.width / 2 - 14) + 'px';
+                        tokenEl.style.top  = (aRect.top  - dRect.top  + aRect.height / 2 - 14) + 'px';
+                        tokenEl.style.opacity = '1';
+                    }
+
+                    // Light up pipe
+                    if (s.pipes[i]) {
+                        const pipeEl = document.getElementById(s.pipes[i]);
+                        if (pipeEl) {
+                            pipeEl.classList.add('aad-pipe-active');
+                            pipeEl.style.setProperty('--pipe-color', s.color);
+                        }
+                    }
+                }
+
+                log.innerHTML += `<div class="demo-log-line" style="border-left:3px solid ${s.color};padding-left:6px">${s.msgs[i]}</div>`;
+                log.scrollTop = log.scrollHeight;
+
+                // Mark previous actors done
+                if (i > 0) {
+                    const prev = document.getElementById(s.actors[i - 1]);
+                    if (prev) { prev.classList.remove('aad-actor-active'); prev.classList.add('aad-actor-done'); }
+                }
+
+                await sleep(800);
+            }
+
+            // Final state
+            tokenEl.style.opacity = '0';
+            document.querySelectorAll('.aad-flow-actor').forEach(n => n.classList.remove('aad-actor-active'));
+            document.querySelectorAll('.aad-flow-pipe,.aad-pipe-dashed').forEach(p => p.classList.remove('aad-pipe-active'));
+            aadRunBtn.disabled = false;
         }
-    }
 
-    const aadOnpremBtn = document.getElementById('aad-onprem-btn');
-    if (aadOnpremBtn) {
-        aadOnpremBtn.addEventListener('click', () => runAadScenario([
-            '💻 User at office PC presses Ctrl+Alt+Del → types CORP\\alice',
-            '🔌 PC must reach Domain Controller on LAN (line-of-sight required)',
-            '🔐 DC authenticates with <strong>Kerberos</strong> (port 88)',
-            '📋 LDAP query (port 389) fetches group memberships and GPOs',
-            '🎫 Kerberos TGT issued — valid for 10 hours',
-            '✅ Login complete. Protocol: Kerberos. Directory: AD DS. GPO applied.',
-        ], 'aad-log'));
-    }
+        aadRunBtn.addEventListener('click', animateAad);
+    })();
 
-    const aadCloudBtn = document.getElementById('aad-cloud-btn');
-    if (aadCloudBtn) {
-        aadCloudBtn.addEventListener('click', () => runAadScenario([
-            '💻 User on remote laptop accesses Microsoft 365 via browser',
-            '🌐 Browser redirected to <code>login.microsoftonline.com</code>',
-            '🔐 Azure AD validates credentials using <strong>OpenID Connect</strong> over HTTPS',
-            '📱 MFA challenge sent — user approves on Authenticator app',
-            '🎟️ Azure AD issues JWT <strong>access token</strong> (valid 1 hour) + refresh token',
-            '📋 Intune MDM policies applied (no GPO — cloud-native policy)',
-            '✅ Login complete. No DC needed. Works from anywhere on the internet.',
-        ], 'aad-log'));
-    }
-
-    const aadHybridBtn = document.getElementById('aad-hybrid-btn');
-    if (aadHybridBtn) {
-        aadHybridBtn.addEventListener('click', () => runAadScenario([
-            '🔄 <strong>Entra Connect</strong> has already synced users from on-prem AD to Azure AD',
-            '💻 User logs into Windows with on-prem domain account (Kerberos on LAN)',
-            '🔗 Device is Hybrid Azure AD Joined — registered with both AD and Azure AD',
-            '🌐 User opens Outlook (Microsoft 365) → browser redirects to Azure AD',
-            '🎫 <strong>Seamless SSO</strong>: on-prem Kerberos ticket exchanged for Azure AD token',
-            '✅ No second login required — single sign-on across on-prem and cloud!',
-            '📋 On-prem GPOs apply for Windows settings; Intune applies for cloud apps',
-        ], 'aad-log'));
-    }
-
-    /* ── Workgroup vs Domain ── */
+    /* ── Workgroup vs Domain — ANIMATED ── */
     createDemo('workgroup-vs-domain', `
-        <p class="demo-desc">Try adding a user in a <strong>Workgroup</strong> vs a <strong>Domain</strong> environment and see the operational difference.</p>
-        <div class="demo-controls">
-            <button class="demo-btn demo-btn-sm" id="wg-adduser-btn">👤 Add User (Workgroup)</button>
-            <button class="demo-btn demo-btn-sm" id="dom-adduser-btn">👤 Add User (Domain)</button>
+        <p class="demo-desc">Watch the animated comparison: see what happens when IT adds a user in a <strong>Workgroup</strong> versus a <strong>Domain</strong>. Select a scenario and hit play.</p>
+
+        <div class="demo-controls" style="flex-wrap:wrap;gap:0.5rem">
+            <label class="demo-radio"><input type="radio" name="wgdom-mode" value="workgroup" checked> 🖥️ Workgroup</label>
+            <label class="demo-radio"><input type="radio" name="wgdom-mode" value="domain"> 🏢 AD Domain</label>
         </div>
+
+        <!-- Visual grid of computers -->
+        <div class="wgdom-diagram" id="wgdom-diagram">
+            <!-- Workgroup view -->
+            <div class="wgdom-env" id="wgdom-env-workgroup">
+                <div class="wgdom-admin-box">
+                    <div class="wgdom-actor" id="wg-admin">🧑‍💼<span>IT Admin</span></div>
+                </div>
+                <div class="wgdom-machines">
+                    <div class="wgdom-machine" id="wg-pc1">💻<span>PC-01</span><small class="wgdom-sam">Local SAM</small></div>
+                    <div class="wgdom-machine" id="wg-pc2">💻<span>PC-02</span><small class="wgdom-sam">Local SAM</small></div>
+                    <div class="wgdom-machine" id="wg-pc3">💻<span>PC-03</span><small class="wgdom-sam">Local SAM</small></div>
+                    <div class="wgdom-machine" id="wg-pc4">💻<span>PC-04</span><small class="wgdom-sam">Local SAM</small></div>
+                    <div class="wgdom-machine" id="wg-file">🗄️<span>File Server</span><small class="wgdom-sam">Local SAM</small></div>
+                </div>
+            </div>
+            <!-- Domain view (hidden by default) -->
+            <div class="wgdom-env" id="wgdom-env-domain" style="display:none">
+                <div class="wgdom-admin-box">
+                    <div class="wgdom-actor" id="dom-admin">🧑‍💼<span>IT Admin</span></div>
+                </div>
+                <div class="wgdom-dc-box">
+                    <div class="wgdom-actor wgdom-dc" id="dom-dc">🏢<span>Domain Controller</span><small>Active Directory</small></div>
+                </div>
+                <div class="wgdom-machines">
+                    <div class="wgdom-machine" id="dom-pc1">💻<span>PC-01</span><small>Domain Joined</small></div>
+                    <div class="wgdom-machine" id="dom-pc2">💻<span>PC-02</span><small>Domain Joined</small></div>
+                    <div class="wgdom-machine" id="dom-pc3">💻<span>PC-03</span><small>Domain Joined</small></div>
+                    <div class="wgdom-machine" id="dom-pc4">💻<span>PC-04</span><small>Domain Joined</small></div>
+                    <div class="wgdom-machine" id="dom-file">🗄️<span>File Server</span><small>Domain Joined</small></div>
+                </div>
+            </div>
+        </div>
+
         <div class="demo-log" id="wgdom-log"></div>
-    `);
-
-    const wgAddBtn = document.getElementById('wg-adduser-btn');
-    if (wgAddBtn) {
-        wgAddBtn.addEventListener('click', async function() {
-            const log = document.getElementById('wgdom-log');
-            log.innerHTML = '';
-            const steps = [
-                '⚙️ <strong>WORKGROUP</strong>: IT admin must add "bob" on PC-01',
-                '   ✦ Control Panel → User Accounts → Add user on PC-01',
-                '   ✦ Must repeat on PC-02, PC-03, FILE-SERVER, PRINTER, ...',
-                '📊 10 computers × 1 user = <strong>10 separate operations</strong>',
-                '❌ Bob calls IT because he forgot his password on PC-04',
-                '   → IT must reset on THAT specific machine only',
-                '⚠️ No central audit log. No policy enforcement. Inconsistent settings.',
-            ];
-            for (const msg of steps) {
-                log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
-                log.scrollTop = log.scrollHeight;
-                await sleep(650);
-            }
-        });
-    }
-
-    const domAddBtn = document.getElementById('dom-adduser-btn');
-    if (domAddBtn) {
-        domAddBtn.addEventListener('click', async function() {
-            const log = document.getElementById('wgdom-log');
-            log.innerHTML = '';
-            const steps = [
-                '⚙️ <strong>DOMAIN</strong>: IT admin adds "bob" once in Active Directory',
-                '   ✦ <code>New-ADUser -Name "Bob Smith" -SamAccountName "bsmith" -Enabled $true</code>',
-                '📊 1 operation in AD → Bob can log into ALL 10 domain-joined machines',
-                '📋 GPOs automatically apply: wallpaper, drive maps, software, firewall rules',
-                '🔑 Bob forgets password → IT resets in AD: <code>Set-ADAccountPassword -Identity bsmith</code>',
-                '   → Works everywhere instantly. No need to touch individual machines.',
-                '✅ Central audit log in Event Viewer / SIEM. Full policy enforcement.',
-            ];
-            for (const msg of steps) {
-                log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
-                log.scrollTop = log.scrollHeight;
-                await sleep(650);
-            }
-        });
-    }
-
-    /* ── AD Architecture Explorer ── */
-    createDemo('ad-architecture', `
-        <p class="demo-desc">Click a layer of the AD hierarchy to understand what it does and what objects it contains.</p>
-        <div class="demo-ad-tree" id="ad-arch-tree">
-            <div class="demo-ad-layer" id="adl-forest" data-layer="forest">🌲 Forest: contoso.com</div>
-            <div class="demo-ad-layer" id="adl-tree" data-layer="tree" style="margin-left:1.5rem">🌳 Tree: corp.contoso.com</div>
-            <div class="demo-ad-layer" id="adl-domain" data-layer="domain" style="margin-left:3rem">🏢 Domain: corp.contoso.com</div>
-            <div class="demo-ad-layer" id="adl-ou" data-layer="ou" style="margin-left:4.5rem">📁 OU: Finance</div>
-            <div class="demo-ad-layer" id="adl-user" data-layer="user" style="margin-left:6rem">👤 User: alice</div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem">
+            <button class="demo-btn" id="wgdom-run-btn">▶ Add User "Bob"</button>
+            <button class="demo-btn demo-btn-sm" id="wgdom-reset-btn">↺ Reset</button>
         </div>
-        <div class="demo-log" id="ad-arch-log"></div>
     `);
 
-    const adLayerInfo = {
-        forest: [
-            '🌲 <strong>Forest</strong> — Top-level container. Security boundary.',
-            '   Shares: schema (object definitions), global catalog, and configuration partition.',
-            '   All domains within this forest trust each other.',
-            '   Forest trusts connect separate forests (separate security boundaries).',
-            '   FSMO roles: Schema Master, Domain Naming Master (one each per forest).',
-        ],
-        tree: [
-            '🌳 <strong>Tree</strong> — A group of domains with contiguous DNS namespace.',
-            '   Example: contoso.com → corp.contoso.com → us.corp.contoso.com',
-            '   Parent and child domains have automatic two-way transitive trusts.',
-            '   Separate trees (e.g., fabrikam.com) can join the same forest.',
-        ],
-        domain: [
-            '🏢 <strong>Domain</strong> — Core administrative unit. Has its own DC(s).',
-            '   Contains: users, computers, groups, OUs, and policies.',
-            '   Domain-wide security policies: password policy, account lockout.',
-            '   FSMO roles: PDC Emulator, RID Master, Infrastructure Master (per domain).',
-            '   Clients must be able to reach a DC to log in.',
-        ],
-        ou: [
-            '📁 <strong>Organizational Unit (OU)</strong> — A container inside a domain.',
-            '   Used to organize objects by department, location, or type.',
-            '   GPOs are linked to OUs → settings flow down to child OUs.',
-            '   Delegation: you can give a help desk admin control over just one OU.',
-            '   Example: OU=Finance contains users in the Finance department.',
-        ],
-        user: [
-            '👤 <strong>User Object</strong> — Represents one person\'s account in AD.',
-            '   Key attributes: sAMAccountName, UPN (alice@corp.contoso.com), displayName.',
-            '   Security principal: has a unique SID used for permissions.',
-            '   Member of security groups → inherits resource access.',
-            '   Distinguished Name: CN=Alice,OU=Finance,DC=corp,DC=contoso,DC=com',
-        ],
-    };
-
-    document.querySelectorAll('.demo-ad-layer').forEach(layer => {
-        layer.style.cursor = 'pointer';
-        layer.style.padding = '6px 12px';
-        layer.style.margin = '4px 0';
-        layer.style.borderRadius = '6px';
-        layer.style.transition = 'background 0.2s';
-        layer.addEventListener('click', function() {
-            document.querySelectorAll('.demo-ad-layer').forEach(l => l.classList.remove('demo-node-active'));
-            this.classList.add('demo-node-active');
-            const info = adLayerInfo[this.dataset.layer];
-            const log = document.getElementById('ad-arch-log');
-            log.innerHTML = info.map(l => `<div class="demo-log-line">${l}</div>`).join('');
+    (() => {
+        // Toggle env views when radio changes
+        document.querySelectorAll('input[name="wgdom-mode"]').forEach(r => {
+            r.addEventListener('change', () => {
+                const isWg = r.value === 'workgroup';
+                const wgEnv = document.getElementById('wgdom-env-workgroup');
+                const domEnv = document.getElementById('wgdom-env-domain');
+                if (wgEnv) wgEnv.style.display = isWg ? 'flex' : 'none';
+                if (domEnv) domEnv.style.display = !isWg ? 'flex' : 'none';
+                document.getElementById('wgdom-log').innerHTML = '';
+                // Reset highlight
+                document.querySelectorAll('.wgdom-machine, .wgdom-actor, .wgdom-dc').forEach(el => {
+                    el.classList.remove('wgdom-active', 'wgdom-done', 'wgdom-warn');
+                });
+            });
         });
-    });
+
+        async function flashMachine(id, cls, duration = 600) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add(cls);
+            await sleep(duration);
+            el.classList.remove(cls);
+            el.classList.add('wgdom-done');
+        }
+
+        const runBtn = document.getElementById('wgdom-run-btn');
+        const resetBtn = document.getElementById('wgdom-reset-btn');
+        const log = () => document.getElementById('wgdom-log');
+
+        if (runBtn) {
+            runBtn.addEventListener('click', async function() {
+                this.disabled = true;
+                const mode = document.querySelector('input[name="wgdom-mode"]:checked').value;
+                const l = log();
+                l.innerHTML = '';
+
+                // Reset all highlights
+                document.querySelectorAll('.wgdom-machine, .wgdom-actor, .wgdom-dc').forEach(el => {
+                    el.classList.remove('wgdom-active', 'wgdom-done', 'wgdom-warn');
+                });
+
+                if (mode === 'workgroup') {
+                    const adminEl = document.getElementById('wg-admin');
+                    if (adminEl) adminEl.classList.add('wgdom-active');
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #f59e0b;padding-left:6px">⚙️ <strong>Workgroup:</strong> IT admin must add "bob" individually on each machine</div>`;
+                    await sleep(700);
+
+                    const machines = [
+                        { id: 'wg-pc1', label: '💻 PC-01' },
+                        { id: 'wg-pc2', label: '💻 PC-02' },
+                        { id: 'wg-pc3', label: '💻 PC-03' },
+                        { id: 'wg-pc4', label: '💻 PC-04' },
+                        { id: 'wg-file', label: '🗄️ File Server' },
+                    ];
+
+                    for (let i = 0; i < machines.length; i++) {
+                        const m = machines[i];
+                        const el = document.getElementById(m.id);
+                        if (el) el.classList.add('wgdom-active');
+                        l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #f59e0b;padding-left:6px">➕ Adding "bob" on ${m.label} — Control Panel → User Accounts → New User... (operation ${i + 1} of ${machines.length})</div>`;
+                        l.scrollTop = l.scrollHeight;
+                        await sleep(750);
+                        if (el) { el.classList.remove('wgdom-active'); el.classList.add('wgdom-done'); }
+                    }
+
+                    if (adminEl) adminEl.classList.remove('wgdom-active');
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #ef4444;padding-left:6px">📊 Total operations: <strong>5 separate additions</strong> — and that's just for ONE new user!</div>`;
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #ef4444;padding-left:6px">❌ Bob forgets his password on PC-04 → IT must reset it <em>on that specific machine only</em></div>`;
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #ef4444;padding-left:6px">⚠️ No central audit log. No GPO enforcement. Settings may drift machine by machine.</div>`;
+                    l.scrollTop = l.scrollHeight;
+
+                    // Warn the PC-04
+                    const pc4 = document.getElementById('wg-pc4');
+                    if (pc4) { pc4.classList.remove('wgdom-done'); pc4.classList.add('wgdom-warn'); }
+
+                } else {
+                    // Domain scenario
+                    const adminEl = document.getElementById('dom-admin');
+                    const dcEl = document.getElementById('dom-dc');
+
+                    if (adminEl) adminEl.classList.add('wgdom-active');
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #0b7a75;padding-left:6px">⚙️ <strong>Domain:</strong> IT admin runs ONE command in Active Directory</div>`;
+                    await sleep(600);
+
+                    if (dcEl) dcEl.classList.add('wgdom-active');
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #0b7a75;padding-left:6px">📟 <code>New-ADUser -Name "Bob Smith" -SamAccountName "bsmith" -Enabled $true</code></div>`;
+                    l.scrollTop = l.scrollHeight;
+                    await sleep(800);
+
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #0b7a75;padding-left:6px">✅ User "bsmith" created in Active Directory (1 operation for ALL machines)</div>`;
+                    l.scrollTop = l.scrollHeight;
+                    await sleep(500);
+                    if (dcEl) { dcEl.classList.remove('wgdom-active'); dcEl.classList.add('wgdom-done'); }
+
+                    // All machines light up simultaneously
+                    const domMachines = ['dom-pc1','dom-pc2','dom-pc3','dom-pc4','dom-file'];
+                    domMachines.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.classList.add('wgdom-active');
+                    });
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #0b7a75;padding-left:6px">📡 All domain-joined machines automatically recognize "bsmith" — <strong>no manual setup needed!</strong></div>`;
+                    l.scrollTop = l.scrollHeight;
+                    await sleep(700);
+
+                    domMachines.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) { el.classList.remove('wgdom-active'); el.classList.add('wgdom-done'); }
+                    });
+
+                    if (adminEl) adminEl.classList.remove('wgdom-active');
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #0b7a75;padding-left:6px">📋 GPOs automatically applied: wallpaper, drive maps, software, firewall rules</div>`;
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #22c55e;padding-left:6px">🔑 Password reset? <code>Set-ADAccountPassword -Identity bsmith</code> — works everywhere instantly!</div>`;
+                    l.innerHTML += `<div class="demo-log-line" style="border-left:3px solid #22c55e;padding-left:6px">✅ Central audit log, single identity, full policy enforcement across entire org.</div>`;
+                    l.scrollTop = l.scrollHeight;
+                }
+
+                this.disabled = false;
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                document.querySelectorAll('.wgdom-machine, .wgdom-actor, .wgdom-dc').forEach(el => {
+                    el.classList.remove('wgdom-active', 'wgdom-done', 'wgdom-warn');
+                });
+                document.getElementById('wgdom-log').innerHTML = '';
+            });
+        }
+    })();
+
+    /* ── AD Architecture Explorer — ANIMATED ── */
+    createDemo('ad-architecture', `
+        <p class="demo-desc">Trace the Active Directory hierarchy from the forest boundary down to a single user object. Click any layer for details or run the guided animation.</p>
+        <div class="demo-ad-arch-layout">
+            <div class="demo-ad-arch-map" id="ad-arch-map">
+                <button class="demo-ad-arch-node" id="adl-forest" data-layer="forest" type="button">
+                    <span class="demo-ad-arch-emoji">🌲</span>
+                    <span class="demo-ad-arch-copy"><strong>Forest</strong><small>Security boundary + shared schema</small></span>
+                </button>
+                <button class="demo-ad-arch-node" id="adl-tree" data-layer="tree" type="button">
+                    <span class="demo-ad-arch-emoji">🌳</span>
+                    <span class="demo-ad-arch-copy"><strong>Tree</strong><small>Contiguous DNS namespace</small></span>
+                </button>
+                <button class="demo-ad-arch-node" id="adl-domain" data-layer="domain" type="button">
+                    <span class="demo-ad-arch-emoji">🏢</span>
+                    <span class="demo-ad-arch-copy"><strong>Domain</strong><small>Administrative unit + DCs</small></span>
+                </button>
+                <button class="demo-ad-arch-node" id="adl-ou" data-layer="ou" type="button">
+                    <span class="demo-ad-arch-emoji">📁</span>
+                    <span class="demo-ad-arch-copy"><strong>OU</strong><small>Delegation + GPO target</small></span>
+                </button>
+                <button class="demo-ad-arch-node" id="adl-user" data-layer="user" type="button">
+                    <span class="demo-ad-arch-emoji">👤</span>
+                    <span class="demo-ad-arch-copy"><strong>User Object</strong><small>Identity, SID, group membership</small></span>
+                </button>
+                <div class="demo-ad-arch-signal" id="ad-arch-signal">✨</div>
+            </div>
+
+            <div class="demo-ad-arch-panel">
+                <div class="demo-ad-arch-summary" id="ad-arch-summary">
+                    <strong>Ready:</strong> Start the trace to walk the hierarchy in order, or click a layer to inspect it directly.
+                </div>
+                <div class="demo-log" id="ad-arch-log"></div>
+                <div class="demo-controls">
+                    <button class="demo-btn" id="ad-arch-run">▶ Trace Hierarchy</button>
+                    <button class="demo-btn demo-btn-sm" id="ad-arch-reset">↺ Reset</button>
+                </div>
+            </div>
+        </div>
+    `);
+
+    (() => {
+        const adOrder = ['forest', 'tree', 'domain', 'ou', 'user'];
+        const adLayerInfo = {
+            forest: {
+                title: 'Forest',
+                summary: 'The forest is the top-level trust and schema boundary for Active Directory.',
+                lines: [
+                    '🌲 <strong>Forest</strong> — highest AD boundary. All domains inside it share the same schema and global catalog.',
+                    '🧭 This is the level where the <strong>Schema Master</strong> and <strong>Domain Naming Master</strong> FSMO roles live.',
+                    '🤝 Domains inside one forest trust each other automatically. A different forest means a different security boundary.',
+                ],
+            },
+            tree: {
+                title: 'Tree',
+                summary: 'A tree groups domains that share one continuous DNS naming structure.',
+                lines: [
+                    '🌳 <strong>Tree</strong> — domains follow a contiguous namespace such as <code>contoso.com</code> → <code>corp.contoso.com</code>.',
+                    '🔗 Parent and child domains gain automatic two-way transitive trust.',
+                    '🧩 Multiple trees can still belong to the same forest if they share the schema and global catalog.',
+                ],
+            },
+            domain: {
+                title: 'Domain',
+                summary: 'The domain is the main administrative unit where authentication and policy decisions happen.',
+                lines: [
+                    '🏢 <strong>Domain</strong> — contains users, computers, groups, OUs, domain controllers, and policy scope.',
+                    '🔐 Kerberos logon usually starts here because clients contact a DC in their domain.',
+                    '⚙️ Per-domain FSMO roles: <strong>PDC Emulator</strong>, <strong>RID Master</strong>, and <strong>Infrastructure Master</strong>.',
+                ],
+            },
+            ou: {
+                title: 'Organizational Unit',
+                summary: 'OUs organize objects so admins can delegate control and target Group Policy cleanly.',
+                lines: [
+                    '📁 <strong>OU</strong> — container inside a domain, often shaped by department, office, or device type.',
+                    '📋 GPOs are commonly linked here because OUs are the practical control point for settings.',
+                    '🛠️ Delegation lets you grant limited admin rights to one OU without giving away the whole domain.',
+                ],
+            },
+            user: {
+                title: 'User Object',
+                summary: 'A user object is the identity record that ultimately logs on, receives group memberships, and gets access tokens.',
+                lines: [
+                    '👤 <strong>User Object</strong> — stores account identity such as <code>sAMAccountName</code>, <code>UPN</code>, and password state.',
+                    '🪪 It is a security principal with a unique <strong>SID</strong>, which Windows uses in ACLs and access checks.',
+                    '📌 Example DN: <code>CN=Alice,OU=Finance,DC=corp,DC=contoso,DC=com</code>. That full path shows exactly where the object lives.',
+                ],
+            },
+        };
+
+        const map = document.getElementById('ad-arch-map');
+        const summary = document.getElementById('ad-arch-summary');
+        const log = document.getElementById('ad-arch-log');
+        const signal = document.getElementById('ad-arch-signal');
+        const runBtn = document.getElementById('ad-arch-run');
+        const resetBtn = document.getElementById('ad-arch-reset');
+
+        if (!map || !summary || !log || !signal || !runBtn || !resetBtn) return;
+
+        function placeSignal(targetEl) {
+            const mapRect = map.getBoundingClientRect();
+            const nodeRect = targetEl.getBoundingClientRect();
+            signal.style.left = (nodeRect.left - mapRect.left + nodeRect.width - 10) + 'px';
+            signal.style.top = (nodeRect.top - mapRect.top + nodeRect.height / 2 - 12) + 'px';
+            signal.style.opacity = '1';
+        }
+
+        function renderAdLayer(layerKey, stepLabel = '') {
+            const info = adLayerInfo[layerKey];
+            const currentIndex = adOrder.indexOf(layerKey);
+            const currentNode = map.querySelector(`[data-layer="${layerKey}"]`);
+            if (!info || currentIndex === -1 || !currentNode) return;
+
+            map.querySelectorAll('.demo-ad-arch-node').forEach((node, index) => {
+                node.classList.remove('demo-ad-arch-active', 'demo-ad-arch-done');
+                if (index < currentIndex) node.classList.add('demo-ad-arch-done');
+                if (index === currentIndex) node.classList.add('demo-ad-arch-active');
+            });
+
+            summary.innerHTML = `${stepLabel ? `<span class="demo-ad-arch-step">${stepLabel}</span>` : ''}<strong>${info.title}:</strong> ${info.summary}`;
+            log.innerHTML = info.lines.map(line => `<div class="demo-log-line">${line}</div>`).join('');
+            placeSignal(currentNode);
+        }
+
+        function resetAdArchitecture() {
+            map.querySelectorAll('.demo-ad-arch-node').forEach(node => {
+                node.classList.remove('demo-ad-arch-active', 'demo-ad-arch-done');
+            });
+            signal.style.opacity = '0';
+            summary.innerHTML = '<strong>Ready:</strong> Start the trace to walk the hierarchy in order, or click a layer to inspect it directly.';
+            log.innerHTML = '';
+        }
+
+        map.querySelectorAll('.demo-ad-arch-node').forEach(node => {
+            node.addEventListener('click', () => {
+                renderAdLayer(node.dataset.layer);
+            });
+        });
+
+        runBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            resetAdArchitecture();
+
+            for (let i = 0; i < adOrder.length; i++) {
+                renderAdLayer(adOrder[i], `Step ${i + 1} of ${adOrder.length}`);
+                await sleep(900);
+            }
+
+            this.disabled = false;
+        });
+
+        resetBtn.addEventListener('click', resetAdArchitecture);
+    })();
 
     /* ── LDAP Query Builder ── */
     createDemo('ldap-query', `
@@ -2875,7 +3202,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <table style="width:100%;font-size:0.85rem">
                 <thead><tr><th>Level</th><th>Policy Name</th><th>Password Min Length</th><th>USB Drives</th></tr></thead>
                 <tbody>
-                    <tr><td>Local</td><td>Local Policy</td><td><input type="number" id="gpo-local-pwd" value="6" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-local-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block">Block</option></select></td></tr>
+                    <tr><td>Local</td><td>Local Policy</td><td><input type="number" id="gpo-local-pwd" value="18" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-local-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block" selected>Block</option></select></td></tr>
+                    <tr><td>Site</td><td><label class="demo-radio" style="font-size:0.8rem"><input type="checkbox" id="gpo-site-enabled"> Site GPO</label></td><td><input type="number" id="gpo-site-pwd" value="14" min="0" max="20" class="demo-input demo-input-sm" disabled></td><td><select id="gpo-site-usb" class="demo-select demo-select-sm" disabled><option value="allow">Allow</option><option value="block" selected>Block</option></select></td></tr>
                     <tr><td>Domain</td><td>Corp Security</td><td><input type="number" id="gpo-domain-pwd" value="12" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-domain-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block" selected>Block</option></select></td></tr>
                     <tr><td>OU: Finance</td><td>Finance Policy</td><td><input type="number" id="gpo-ou-pwd" value="16" min="0" max="20" class="demo-input demo-input-sm"></td><td><select id="gpo-ou-usb" class="demo-select demo-select-sm"><option value="allow">Allow</option><option value="block" selected>Block</option></select></td></tr>
                 </tbody>
@@ -2885,25 +3213,53 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="demo-log" id="gpo-result-log"></div>
     `);
 
+    const gpoSiteEnabled = document.getElementById('gpo-site-enabled');
+    if (gpoSiteEnabled) {
+        gpoSiteEnabled.addEventListener('change', function() {
+            const sitePwd = document.getElementById('gpo-site-pwd');
+            const siteUsb = document.getElementById('gpo-site-usb');
+            const enabled = this.checked;
+            sitePwd.disabled = !enabled;
+            siteUsb.disabled = !enabled;
+        });
+    }
+
     const gpoCalcBtn = document.getElementById('gpo-calc-btn');
     if (gpoCalcBtn) {
         gpoCalcBtn.addEventListener('click', async function() {
             const localPwd = parseInt(document.getElementById('gpo-local-pwd').value);
+            const siteEnabled = document.getElementById('gpo-site-enabled').checked;
+            const sitePwd = parseInt(document.getElementById('gpo-site-pwd').value);
             const domainPwd = parseInt(document.getElementById('gpo-domain-pwd').value);
             const ouPwd = parseInt(document.getElementById('gpo-ou-pwd').value);
             const localUsb = document.getElementById('gpo-local-usb').value;
+            const siteUsb = document.getElementById('gpo-site-usb').value;
             const domainUsb = document.getElementById('gpo-domain-usb').value;
             const ouUsb = document.getElementById('gpo-ou-usb').value;
 
             const log = document.getElementById('gpo-result-log');
             log.innerHTML = '';
 
+            let currentPwd = localPwd;
+            let currentUsb = localUsb;
+
             const steps = [
                 `1️⃣ <strong>Local Policy</strong> applied first → min password: ${localPwd}, USB: ${localUsb}`,
-                `2️⃣ <strong>Site GPO</strong> — none configured in this example`,
-                `3️⃣ <strong>Domain GPO</strong> applied → overrides Local: min password: ${domainPwd}, USB: ${domainUsb}`,
+                siteEnabled
+                    ? `2️⃣ <strong>Site GPO</strong> applied → overrides Local: min password: ${sitePwd}, USB: ${siteUsb}`
+                    : `2️⃣ <strong>Site GPO</strong> — none configured in this example`,
+                `3️⃣ <strong>Domain GPO</strong> applied → overrides ${siteEnabled ? 'Site' : 'Local'}: min password: ${domainPwd}, USB: ${domainUsb}`,
                 `4️⃣ <strong>OU GPO</strong> applied last (wins!) → min password: ${ouPwd}, USB: ${ouUsb}`,
             ];
+
+            if (siteEnabled) {
+                currentPwd = sitePwd;
+                currentUsb = siteUsb;
+            }
+            currentPwd = domainPwd;
+            currentUsb = domainUsb;
+            currentPwd = ouPwd;
+            currentUsb = ouUsb;
 
             for (const s of steps) {
                 log.innerHTML += `<div class="demo-log-line">${s}</div>`;
@@ -2911,9 +3267,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await sleep(600);
             }
 
-            // Effective result
-            const effPwd = ouPwd; // OU wins
-            const effUsb = ouUsb;
+            const effPwd = currentPwd;
+            const effUsb = currentUsb;
             log.innerHTML += `<div class="demo-log-line" style="background:#e8f5e9;border-left:3px solid #388e3c;padding:4px 8px;margin-top:4px">
                 ✅ <strong>Effective Policy for FinanceOU users:</strong><br>
                 &nbsp;&nbsp;• Minimum password length: <strong>${effPwd} characters</strong><br>
@@ -3338,70 +3693,221 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ── OAuth 2.0 Flow Simulator ── */
     createDemo('oauth', `
-        <p class="demo-desc">Simulate the OAuth 2.0 Authorization Code + PKCE flow. Select a grant type and walk through it.</p>
+        <p class="demo-desc">Simulate OAuth 2.0 flows with a live animation. Select a grant type and watch the token exchange step by step.</p>
         <div class="demo-controls">
             <label class="demo-radio"><input type="radio" name="oauth-grant" value="authcode" checked> Authorization Code + PKCE</label>
             <label class="demo-radio"><input type="radio" name="oauth-grant" value="clientcreds"> Client Credentials</label>
             <label class="demo-radio"><input type="radio" name="oauth-grant" value="device"> Device Code</label>
         </div>
+
+        <!-- Sequence diagram: actor headers + arrow rows aligned to columns -->
+        <div class="oauth-seq" id="oauth-seq">
+            <!-- Actor header row -->
+            <div class="oauth-seq-actors">
+                <div class="oauth-seq-actor" id="oauth-actor-user">👤<span>User /&nbsp;Browser</span></div>
+                <div class="oauth-seq-actor" id="oauth-actor-app">📱<span>App /&nbsp;Client</span></div>
+                <div class="oauth-seq-actor" id="oauth-actor-idp">🏢<span>Auth&nbsp;Server</span></div>
+                <div class="oauth-seq-actor" id="oauth-actor-api">🌐<span>API /&nbsp;Resource</span></div>
+            </div>
+            <!-- Arrow rows appended here by JS -->
+            <div id="oauth-seq-rows"></div>
+        </div>
+
         <div class="demo-log" id="oauth-log"></div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem">
-            <button class="demo-btn" id="oauth-run-btn">▶ Run Flow</button>
-            <button class="demo-btn demo-btn-sm" id="oauth-decode-btn">🔍 Decode Sample JWT</button>
+            <button class="demo-btn demo-btn-sm" id="oauth-next-btn">▶ Next Step</button>
+            <button class="demo-btn demo-btn-sm" id="oauth-reset-btn">↺ Reset</button>
+            <button class="demo-btn demo-btn-sm" id="oauth-auto-btn">⚡ Auto Play</button>
+            <span id="oauth-step-counter" style="font-size:0.85rem;align-self:center;color:var(--clr-text-muted,#6b7280)">Step 0 / 10</span>
+            <button class="demo-btn demo-btn-sm" id="oauth-decode-btn" style="margin-left:auto">🔍 Decode Sample JWT</button>
         </div>
         <div class="demo-log" id="oauth-jwt-log" style="font-family:monospace;font-size:0.8rem;display:none;margin-top:0.4rem"></div>
     `);
 
-    const oauthGrants = {
+    // Actor column indices — must match header order (0=user, 1=app, 2=idp, 3=api)
+    // from / to reference these indices for arrow span
+    const oauthFlowSteps = {
         authcode: [
-            '👤 User clicks "Login with Microsoft" in the web app',
-            '📱 App generates random <strong>code_verifier</strong> and <strong>code_challenge</strong> (PKCE):',
-            '   code_verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"',
-            '   code_challenge = BASE64URL(SHA256(code_verifier))',
-            '🌐 App redirects browser to Azure AD /authorize with: client_id, scope, redirect_uri, code_challenge',
-            '🏢 Azure AD shows login page → user authenticates + MFA',
-            '🔀 Azure AD redirects back: <code>https://app.example.com/callback?code=OAAABAAAAiL9K...</code>',
-            '📱 App sends POST to /token endpoint with: code + code_verifier (proves it\'s the same app)',
-            '🏢 Azure AD validates code_verifier matches code_challenge → issues tokens:',
-            '   • <strong>access_token</strong> (JWT, 1 hour) — for calling APIs',
-            '   • <strong>id_token</strong> (JWT) — confirms user identity (OpenID Connect)',
-            '   • <strong>refresh_token</strong> (90 days) — get new access tokens silently',
-            '✅ App calls Microsoft Graph: <code>GET /v1.0/me</code> with <code>Authorization: Bearer {access_token}</code>',
+            { from: 0, to: 1, color: '#f5a65b', label: 'Click Login',              msg: '👤 User clicks "Login with Microsoft" in the web app' },
+            { from: 1, to: 1, color: '#6c5ce7', label: 'Generate PKCE',            msg: '📱 App generates <strong>code_verifier</strong> + <strong>code_challenge</strong> (PKCE): <code>challenge = BASE64URL(SHA256(verifier))</code>' },
+            { from: 1, to: 2, color: '#6c5ce7', label: 'GET /authorize →',         msg: '🌐 Browser redirected to Azure AD <code>/authorize</code> with: <em>client_id, scope, redirect_uri, code_challenge</em>' },
+            { from: 2, to: 0, color: '#0b7a75', label: '← Login Page',             msg: '🏢 Azure AD shows login page → user enters credentials + MFA' },
+            { from: 0, to: 2, color: '#f5a65b', label: 'Credentials →',            msg: '👤 User submits credentials and completes MFA' },
+            { from: 2, to: 1, color: '#0b7a75', label: '← code',                   msg: '🔀 Azure AD redirects back: <code>https://app.example.com/callback?code=OAAABAAAAiL9K...</code>' },
+            { from: 1, to: 2, color: '#6c5ce7', label: 'POST /token + verifier →', msg: '📱 App POSTs to <code>/token</code>: <em>code</em> + <em>code_verifier</em> (proves same app started the flow)' },
+            { from: 2, to: 1, color: '#0b7a75', label: '← access_token',           msg: '🏢 Azure AD validates verifier → issues <strong>access_token</strong> (1 hr), <strong>id_token</strong>, <strong>refresh_token</strong> (90 days)' },
+            { from: 1, to: 3, color: '#6c5ce7', label: 'GET /me + Bearer →',       msg: '✅ App calls API: <code>GET /v1.0/me</code> with <code>Authorization: Bearer {access_token}</code>' },
+            { from: 3, to: 1, color: '#0b7a75', label: '← 200 User Data',          msg: '🌐 API validates token and returns user profile data' },
         ],
         clientcreds: [
-            '🤖 Background service/daemon needs to call an API (no user involved)',
-            '📱 Service sends POST to /token with: client_id + client_secret (or certificate)',
-            '🏢 Azure AD validates client credentials',
-            '🔑 Azure AD returns <strong>access_token</strong> (JWT, app permissions only — no user context)',
-            '✅ Service calls API with: <code>Authorization: Bearer {access_token}</code>',
-            '⏱️ Token expires (typically 1 hour) → service requests a new one',
-            'ℹ️ No refresh token in Client Credentials — just re-authenticate each time',
-            '🔒 Best practice: use certificate instead of client_secret for higher security',
+            { from: 1, to: 1, color: '#f5a65b', label: 'No user — service only',   msg: '🤖 Background service/daemon needs to call an API — no user browser session' },
+            { from: 1, to: 2, color: '#6c5ce7', label: 'POST /token + secret →',   msg: '📱 Service POSTs to <code>/token</code>: <em>client_id</em> + <em>client_secret</em> (or certificate — preferred)' },
+            { from: 2, to: 2, color: '#6c5ce7', label: 'Validate credentials',     msg: '🏢 Azure AD validates client credentials — no user involved, only app permissions' },
+            { from: 2, to: 1, color: '#0b7a75', label: '← access_token',           msg: '🔑 Azure AD returns <strong>access_token</strong> (JWT, app permissions only, no user context, no refresh token)' },
+            { from: 1, to: 3, color: '#6c5ce7', label: 'API call + Bearer →',      msg: '✅ Service calls API with: <code>Authorization: Bearer {access_token}</code>' },
+            { from: 3, to: 1, color: '#0b7a75', label: '← 200 Response',           msg: '🌐 API validates token and returns data' },
+            { from: 1, to: 1, color: '#f5a65b', label: 'Token expires (1 hr)',      msg: '⏱️ Token expires — service requests a brand new one. No refresh token in Client Credentials.' },
+            { from: 1, to: 2, color: '#6c5ce7', label: 'POST /token again →',      msg: '🔒 Best practice: use a certificate instead of client_secret for production workloads' },
         ],
         device: [
-            '📺 Device (TV, CLI tool, IoT) cannot open a browser',
-            '📱 Device POSTs to <code>/devicecode</code> endpoint with: client_id + scope',
-            '🏢 Azure AD returns: <strong>device_code</strong>, <strong>user_code</strong>, and verification_uri',
-            '📺 Device displays: "Go to aka.ms/devicelogin and enter code: ABCD-1234"',
-            '👤 User opens another device (phone/laptop), navigates to verification_uri, enters code',
-            '🏢 Azure AD authenticates the user on THAT device → links to the waiting device_code',
-            '📺 Device polls /token every 5 seconds until user completes authentication',
-            '✅ Device receives access_token + refresh_token',
-            '📺 Device can now call APIs on behalf of the authenticated user',
+            { from: 1, to: 2, color: '#6c5ce7', label: 'POST /devicecode →',       msg: '📺 Device (TV, CLI, IoT) POSTs to <code>/devicecode</code>: <em>client_id</em> + <em>scope</em>' },
+            { from: 2, to: 1, color: '#0b7a75', label: '← device_code + user_code',msg: '🏢 Azure AD returns: <strong>device_code</strong>, <strong>user_code</strong> (e.g. ABCD-1234), and <em>verification_uri</em>' },
+            { from: 1, to: 0, color: '#0b7a75', label: '← Show code to user',      msg: '📺 Device displays: "Go to <strong>aka.ms/devicelogin</strong> and enter code: <strong>ABCD-1234</strong>"' },
+            { from: 0, to: 2, color: '#f5a65b', label: 'Enter code on phone →',    msg: '👤 User opens phone/laptop, navigates to verification_uri, enters the user_code' },
+            { from: 2, to: 0, color: '#0b7a75', label: '← Login + MFA',            msg: '🏢 Azure AD authenticates the user on that second device and links it to the waiting device_code' },
+            { from: 1, to: 2, color: '#6c5ce7', label: 'Poll /token every 5s →',   msg: '📺 Device polls <code>/token</code> every 5 seconds with the <em>device_code</em> until user completes auth' },
+            { from: 2, to: 1, color: '#0b7a75', label: '← access_token + refresh', msg: '✅ Device receives <strong>access_token</strong> + <strong>refresh_token</strong>' },
+            { from: 1, to: 3, color: '#6c5ce7', label: 'API call + Bearer →',      msg: '📺 Device calls API on behalf of authenticated user' },
+            { from: 3, to: 1, color: '#0b7a75', label: '← 200 Response',           msg: '🌐 API validates token and returns data to the device' },
         ],
     };
 
-    const oauthRunBtn = document.getElementById('oauth-run-btn');
-    if (oauthRunBtn) {
-        oauthRunBtn.addEventListener('click', async function() {
+    let oauthStep = 0;
+    const oauthLog      = document.getElementById('oauth-log');
+    const oauthSeqRows  = document.getElementById('oauth-seq-rows');
+    const oauthNextBtn  = document.getElementById('oauth-next-btn');
+    const oauthResetBtn = document.getElementById('oauth-reset-btn');
+    const oauthAutoBtn  = document.getElementById('oauth-auto-btn');
+    const OAUTH_COLS    = 4; // number of actor columns
+
+    function oauthHighlightActors(from, to) {
+        ['user','app','idp','api'].forEach((id, i) => {
+            const el = document.getElementById(`oauth-actor-${id}`);
+            if (el) el.classList.toggle('oauth-seq-actor-active', i === from || i === to);
+        });
+    }
+
+    function updateOAuthCounter() {
+        const grant = document.querySelector('input[name="oauth-grant"]:checked').value;
+        const total = oauthFlowSteps[grant].length;
+        const el = document.getElementById('oauth-step-counter');
+        if (el) el.textContent = `Step ${oauthStep} / ${total}`;
+    }
+
+    function resetOAuth() {
+        oauthStep = 0;
+        if (oauthLog)     oauthLog.innerHTML = '';
+        if (oauthSeqRows) oauthSeqRows.innerHTML = '';
+        ['user','app','idp','api'].forEach(id => {
+            const el = document.getElementById(`oauth-actor-${id}`);
+            if (el) el.classList.remove('oauth-seq-actor-active');
+        });
+        if (oauthNextBtn) oauthNextBtn.disabled = false;
+        updateOAuthCounter();
+    }
+
+    function buildOAuthArrowRow(s) {
+        // s.from and s.to are 0-based column indices
+        const row = document.createElement('div');
+        row.className = 'oauth-seq-row';
+
+        if (s.from === s.to) {
+            // Self-message: place badge in that column
+            for (let c = 0; c < OAUTH_COLS; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'oauth-seq-cell';
+                if (c === s.from) {
+                    cell.innerHTML = `<span class="oauth-seq-self" style="background:${s.color}">${s.label}</span>`;
+                }
+                row.appendChild(cell);
+            }
+        } else {
+            const leftCol  = Math.min(s.from, s.to);
+            const rightCol = Math.max(s.from, s.to);
+            const goRight  = s.to > s.from;
+
+            for (let c = 0; c < OAUTH_COLS; c++) {
+                const cell = document.createElement('div');
+                if (c < leftCol || c > rightCol) {
+                    cell.className = 'oauth-seq-cell';
+                } else if (c === leftCol && c === rightCol) {
+                    // shouldn't happen (self handled above)
+                    cell.className = 'oauth-seq-cell';
+                } else if (c === leftCol) {
+                    cell.className = 'oauth-seq-cell oauth-seq-span-start';
+                    if (!goRight) {
+                        // arrow head points left → arrowhead on LEFT end
+                        cell.innerHTML = `<span class="oauth-seq-head oauth-seq-head-left" style="border-right-color:${s.color}"></span>`;
+                    }
+                } else if (c === rightCol) {
+                    cell.className = 'oauth-seq-cell oauth-seq-span-end';
+                    if (goRight) {
+                        // arrow head points right → arrowhead on RIGHT end
+                        cell.innerHTML = `<span class="oauth-seq-head oauth-seq-head-right" style="border-left-color:${s.color}"></span>`;
+                    }
+                    // label in the rightmost span cell
+                    const lbl = document.createElement('span');
+                    lbl.className = 'oauth-seq-label';
+                    lbl.style.background = s.color;
+                    lbl.textContent = s.label;
+                    cell.appendChild(lbl);
+                } else {
+                    // middle span cells — just the line
+                    cell.className = 'oauth-seq-cell oauth-seq-span-mid';
+                }
+                // add the vertical lifeline dot in each cell
+                const lifeline = document.createElement('div');
+                lifeline.className = 'oauth-seq-lifeline';
+                cell.appendChild(lifeline);
+                row.appendChild(cell);
+            }
+        }
+        return row;
+    }
+
+    async function oauthAdvanceStep() {
+        const grant = document.querySelector('input[name="oauth-grant"]:checked').value;
+        const steps = oauthFlowSteps[grant];
+        if (oauthStep >= steps.length) return;
+        const s = steps[oauthStep];
+
+        oauthHighlightActors(s.from, s.to);
+
+        // Append arrow row into sequence diagram
+        if (oauthSeqRows) {
+            const row = buildOAuthArrowRow(s);
+            oauthSeqRows.appendChild(row);
+        }
+
+        // Log line
+        if (oauthLog) {
+            oauthLog.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
+            oauthLog.scrollTop = oauthLog.scrollHeight;
+        }
+
+        oauthStep++;
+        updateOAuthCounter();
+
+        if (oauthStep >= steps.length) {
+            if (oauthNextBtn) oauthNextBtn.disabled = true;
+            ['user','app','idp','api'].forEach(id => {
+                const el = document.getElementById(`oauth-actor-${id}`);
+                if (el) el.classList.remove('oauth-seq-actor-active');
+            });
+            if (oauthLog) {
+                oauthLog.innerHTML += `<div class="demo-log-line"><strong>✅ OAuth flow complete!</strong></div>`;
+                oauthLog.scrollTop = oauthLog.scrollHeight;
+            }
+        }
+    }
+
+    // Reset when grant type changes
+    document.querySelectorAll('input[name="oauth-grant"]').forEach(radio => {
+        radio.addEventListener('change', resetOAuth);
+    });
+
+    if (oauthNextBtn)  oauthNextBtn.addEventListener('click', oauthAdvanceStep);
+    if (oauthResetBtn) oauthResetBtn.addEventListener('click', resetOAuth);
+    if (oauthAutoBtn) {
+        oauthAutoBtn.addEventListener('click', async function() {
             this.disabled = true;
+            if (oauthNextBtn) oauthNextBtn.disabled = true;
+            resetOAuth();
             const grant = document.querySelector('input[name="oauth-grant"]:checked').value;
-            const log = document.getElementById('oauth-log');
-            log.innerHTML = '';
-            for (const s of oauthGrants[grant]) {
-                log.innerHTML += `<div class="demo-log-line">${s}</div>`;
-                log.scrollTop = log.scrollHeight;
-                await sleep(650);
+            const steps = oauthFlowSteps[grant];
+            for (let i = 0; i < steps.length; i++) {
+                await oauthAdvanceStep();
+                await sleep(600);
             }
             this.disabled = false;
         });

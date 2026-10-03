@@ -94,17 +94,22 @@ window.addEventListener('hashchange', () => {
     setTimeout(() => syncNavigator(false), 650);
 });
 
-// Handle initial page load with a hash in the URL
+// Handle initial page load with a hash in the URL.
+// The browser may have already jumped to the anchor before JS ran, so we:
+//   1. Instantly reset to top so getBoundingClientRect() gives document-relative coords
+//   2. Then smooth-scroll to the correct position.
 if (window.location.hash) {
     const hash = window.location.hash;
     const target = document.querySelector(hash);
     if (target) {
+        // Snap back to top first so measurements are accurate
+        window.scrollTo({ top: 0, behavior: 'instant' });
         requestAnimationFrame(() => {
             setTimeout(() => {
                 openTargetCard(hash);
                 scrollToTarget(target);
                 syncNavigator(false);
-            }, 80);
+            }, 120);
         });
     }
 } else {

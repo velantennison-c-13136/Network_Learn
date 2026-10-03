@@ -20,7 +20,9 @@
 }
 
 html {
-    scroll-behavior: smooth;
+    /* JS controls all scroll behaviour — do not set smooth here,
+       it would fight window.scrollTo() calls in app.js */
+    scroll-behavior: auto;
 }
 
 body {
