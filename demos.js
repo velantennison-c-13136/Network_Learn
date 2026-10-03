@@ -2442,12 +2442,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <label class="demo-radio"><input type="radio" name="domain-mode" value="workgroup" checked> Workgroup Mode</label>
             <label class="demo-radio"><input type="radio" name="domain-mode" value="domain"> Domain Mode</label>
         </div>
-        <div class="demo-domain-flow" id="domain-flow-sim">
+        <div class="demo-domain-flow" id="domain-flow-sim" style="position:relative">
             <div class="demo-node demo-n-device" id="df-pc">💻<span>PC</span></div>
             <div class="demo-arrow" id="df-arrow">→</div>
             <div class="demo-node demo-n-router" id="df-auth">🗄️<span>Local SAM</span></div>
             <div class="demo-arrow">→</div>
             <div class="demo-node demo-n-device" id="df-resource">📁<span>Resource</span></div>
+            <div class="demo-packet" id="domain-pkt">🔐</div>
         </div>
         <div class="demo-log" id="domain-log"></div>
         <button class="demo-btn" id="domain-login-btn">▶ Simulate Login</button>
@@ -2459,6 +2460,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (r.value === 'domain') authNode.innerHTML = '🏢<span>Domain Controller</span>';
             else authNode.innerHTML = '🗄️<span>Local SAM</span>';
             document.getElementById('domain-log').innerHTML = '';
+            const pkt = document.getElementById('domain-pkt');
+            if (pkt) pkt.style.opacity = '0';
         });
     });
 
@@ -2467,39 +2470,59 @@ document.addEventListener('DOMContentLoaded', () => {
         domainLoginBtn.addEventListener('click', async function () {
             this.disabled = true;
             const mode = document.querySelector('input[name="domain-mode"]:checked').value;
+            const sim = document.getElementById('domain-flow-sim');
+            const pkt = document.getElementById('domain-pkt');
             const log = document.getElementById('domain-log');
             log.innerHTML = '';
+            sim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active', 'demo-node-accept', 'demo-node-reject'));
 
             if (mode === 'workgroup') {
-                const steps = [
-                    '💻 User types username: <code>john</code> on PC-01',
-                    '🗄️ PC checks its own local SAM database for user "john"',
-                    '✅ Found! Login granted — but only on THIS machine',
-                    '📁 Tries to access \\\\FILE-SERVER\\Share ...',
-                    '❌ Access denied — FILE-SERVER has no account for "john"',
-                    '⚠️ Must create a matching local account on every machine!',
+                const flow = [
+                    { sel: '#df-pc',       msg: '💻 User types username: <code>john</code> on PC-01' },
+                    { sel: '#df-auth',     msg: '🗄️ PC checks its own local SAM database for user "john"' },
+                    { sel: '#df-auth',     msg: '✅ Found! Login granted — but only on THIS machine' },
+                    { sel: '#df-resource', msg: '📁 Tries to access \\\\FILE-SERVER\\Share ...' },
                 ];
-                for (const msg of steps) {
-                    log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+                for (const s of flow) {
+                    await animatePacket(sim, pkt, [s.sel], 700);
+                    log.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
                     log.scrollTop = log.scrollHeight;
-                    await sleep(700);
+                    await sleep(200);
                 }
+                // Show rejection on resource
+                const res = sim.querySelector('#df-resource');
+                if (res) res.classList.add('demo-node-reject');
+                log.innerHTML += `<div class="demo-log-line">❌ Access denied — FILE-SERVER has no account for "john"</div>`;
+                log.innerHTML += `<div class="demo-log-line">⚠️ Must create a matching local account on every machine!</div>`;
+                log.scrollTop = log.scrollHeight;
+                pkt.style.opacity = '0';
+                await sleep(1500);
+                if (res) res.classList.remove('demo-node-reject');
             } else {
-                const steps = [
-                    '💻 User types domain credentials: <code>CORP\\john</code> on PC-01',
-                    '🏢 PC contacts Domain Controller at <code>dc01.corp.contoso.com</code>',
-                    '🔐 DC validates credentials using Kerberos protocol',
-                    '🎫 DC issues a Kerberos TGT (Ticket Granting Ticket) to the user',
-                    '📋 GPOs downloaded and applied: desktop settings, drive maps, software',
-                    '📁 User accesses \\\\FILE-SERVER\\Share — Kerberos service ticket presented',
-                    '✅ Access granted! Same login works on ANY domain-joined machine',
+                const flow = [
+                    { sel: '#df-pc',       msg: '💻 User types domain credentials: <code>CORP\\john</code> on PC-01' },
+                    { sel: '#df-auth',     msg: '🏢 PC contacts Domain Controller at <code>dc01.corp.contoso.com</code>' },
+                    { sel: '#df-auth',     msg: '🔐 DC validates credentials using Kerberos protocol' },
+                    { sel: '#df-pc',       msg: '🎫 DC issues a Kerberos TGT (Ticket Granting Ticket) to the user' },
+                    { sel: '#df-pc',       msg: '📋 GPOs downloaded and applied: desktop settings, drive maps, software' },
+                    { sel: '#df-resource', msg: '📁 User accesses \\\\FILE-SERVER\\Share — Kerberos service ticket presented' },
                 ];
-                for (const msg of steps) {
-                    log.innerHTML += `<div class="demo-log-line">${msg}</div>`;
+                for (const s of flow) {
+                    await animatePacket(sim, pkt, [s.sel], 700);
+                    log.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
                     log.scrollTop = log.scrollHeight;
-                    await sleep(700);
+                    await sleep(200);
                 }
+                // Show success on resource
+                const res = sim.querySelector('#df-resource');
+                if (res) res.classList.add('demo-node-accept');
+                log.innerHTML += `<div class="demo-log-line">✅ Access granted! Same login works on ANY domain-joined machine</div>`;
+                log.scrollTop = log.scrollHeight;
+                pkt.style.opacity = '0';
+                await sleep(1500);
+                if (res) res.classList.remove('demo-node-accept');
             }
+            sim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active'));
             this.disabled = false;
         });
     }
@@ -3216,58 +3239,100 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ── SAML Flow Visualizer ── */
     createDemo('saml', `
         <p class="demo-desc">Step through the SAML 2.0 SP-Initiated SSO flow step by step.</p>
-        <div class="demo-network-path" id="saml-sim" style="flex-wrap:wrap;gap:0.5rem">
+        <div class="demo-network-path" id="saml-sim" style="flex-wrap:wrap;gap:0.5rem;position:relative">
             <div class="demo-node demo-n-device" id="saml-browser">🌐<span>Browser</span></div>
             <div class="demo-arrow">↔</div>
             <div class="demo-node demo-n-device" id="saml-sp">📱<span>SP (App)</span></div>
             <div class="demo-arrow">↔</div>
             <div class="demo-node demo-n-router" id="saml-idp">🏢<span>IdP</span></div>
+            <div class="demo-packet" id="saml-pkt">📋</div>
         </div>
         <div class="demo-log" id="saml-log"></div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem">
             <button class="demo-btn demo-btn-sm" id="saml-next-btn">▶ Next Step</button>
             <button class="demo-btn demo-btn-sm" id="saml-reset-btn">↺ Reset</button>
+            <button class="demo-btn demo-btn-sm" id="saml-auto-btn">⚡ Auto Play</button>
             <span id="saml-step-counter" style="font-size:0.85rem;align-self:center;color:var(--clr-text-muted,#6b7280)">Step 0 / 6</span>
         </div>
     `);
 
+    // Packet flow: which node is highlighted per step
+    const samlNodeFlow = [
+        '#saml-browser',    // Step 1: user at browser
+        '#saml-sp',         // Step 2: SP builds AuthnRequest
+        '#saml-idp',        // Step 3: browser → IdP
+        '#saml-idp',        // Step 4: IdP creates assertion
+        '#saml-browser',    // Step 5: browser posts to SP
+        '#saml-sp',         // Step 6: SP validates
+    ];
+
     const samlStepsData = [
-        { actor: 'browser→sp', msg: '👤 <strong>Step 1:</strong> User navigates to <code>https://app.example.com/login</code>. No session found.' },
-        { actor: 'sp→browser', msg: '📱 <strong>Step 2:</strong> SP creates SAML <strong>AuthnRequest</strong> (XML), Base64-encodes it, and 302-redirects browser to IdP:<br>&nbsp;&nbsp;<code>https://login.microsoftonline.com/...?SAMLRequest=PHNhbWxwOlJlc3BvbnNlI...</code>' },
-        { actor: 'browser→idp', msg: '🌐 <strong>Step 3:</strong> Browser follows redirect → arrives at IdP login page. User enters credentials + MFA.' },
-        { actor: 'idp→browser', msg: '🏢 <strong>Step 4:</strong> IdP validates credentials, creates signed <strong>SAML Assertion</strong> (XML):<br>&nbsp;&nbsp;Subject: alice@contoso.com | Attributes: displayName, role=admin | Signature: RSA-SHA256' },
-        { actor: 'browser→sp', msg: '🌐 <strong>Step 5:</strong> Browser auto-POSTs the SAML Response to SP\'s <strong>ACS URL</strong>:<br>&nbsp;&nbsp;<code>POST https://app.example.com/saml/acs</code><br>&nbsp;&nbsp;Body: SAMLResponse=PHNhbWxwOlJlc3BvbnNlI...' },
-        { actor: 'sp', msg: '📱 <strong>Step 6:</strong> SP validates XML signature using IdP\'s public certificate → extracts claims → creates local session.<br>&nbsp;&nbsp;✅ <strong>Login complete!</strong> User sees their dashboard.' },
+        { msg: '👤 <strong>Step 1:</strong> User navigates to <code>https://app.example.com/login</code>. No session found.' },
+        { msg: '📱 <strong>Step 2:</strong> SP creates SAML <strong>AuthnRequest</strong> (XML), Base64-encodes it, and 302-redirects browser to IdP:<br>&nbsp;&nbsp;<code>https://login.microsoftonline.com/...?SAMLRequest=PHNhbWxwOlJlc3BvbnNlI...</code>' },
+        { msg: '🌐 <strong>Step 3:</strong> Browser follows redirect → arrives at IdP login page. User enters credentials + MFA.' },
+        { msg: '🏢 <strong>Step 4:</strong> IdP validates credentials, creates signed <strong>SAML Assertion</strong> (XML):<br>&nbsp;&nbsp;Subject: alice@contoso.com | Attributes: displayName, role=admin | Signature: RSA-SHA256' },
+        { msg: '🌐 <strong>Step 5:</strong> Browser auto-POSTs the SAML Response to SP\'s <strong>ACS URL</strong>:<br>&nbsp;&nbsp;<code>POST https://app.example.com/saml/acs</code><br>&nbsp;&nbsp;Body: SAMLResponse=PHNhbWxwOlJlc3BvbnNlI...' },
+        { msg: '📱 <strong>Step 6:</strong> SP validates XML signature using IdP\'s public certificate → extracts claims → creates local session.<br>&nbsp;&nbsp;✅ <strong>Login complete!</strong> User sees their dashboard.' },
     ];
 
     let samlStep = 0;
     const samlLog = document.getElementById('saml-log');
+    const samlSim = document.getElementById('saml-sim');
+    const samlPkt = document.getElementById('saml-pkt');
 
     const samlNextBtn = document.getElementById('saml-next-btn');
     const samlResetBtn = document.getElementById('saml-reset-btn');
+    const samlAutoBtn = document.getElementById('saml-auto-btn');
 
     function updateSamlCounter() {
         const el = document.getElementById('saml-step-counter');
         if (el) el.textContent = `Step ${samlStep} / ${samlStepsData.length}`;
     }
 
+    async function samlAdvanceStep() {
+        if (samlStep >= samlStepsData.length) return;
+        const s = samlStepsData[samlStep];
+        const nodeId = samlNodeFlow[samlStep];
+        await animatePacket(samlSim, samlPkt, [nodeId], 600);
+        samlLog.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
+        samlLog.scrollTop = samlLog.scrollHeight;
+        samlStep++;
+        updateSamlCounter();
+        if (samlStep >= samlStepsData.length) {
+            if (samlNextBtn) samlNextBtn.disabled = true;
+            samlPkt.style.opacity = '0';
+        }
+    }
+
     if (samlNextBtn) {
-        samlNextBtn.addEventListener('click', function() {
-            if (samlStep >= samlStepsData.length) return;
-            const s = samlStepsData[samlStep];
-            samlLog.innerHTML += `<div class="demo-log-line">${s.msg}</div>`;
-            samlLog.scrollTop = samlLog.scrollHeight;
-            samlStep++;
-            updateSamlCounter();
-            if (samlStep >= samlStepsData.length) this.disabled = true;
-        });
+        samlNextBtn.addEventListener('click', samlAdvanceStep);
     }
     if (samlResetBtn) {
         samlResetBtn.addEventListener('click', function() {
             samlStep = 0;
             samlLog.innerHTML = '';
+            if (samlPkt) samlPkt.style.opacity = '0';
+            samlSim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active'));
             updateSamlCounter();
             if (samlNextBtn) samlNextBtn.disabled = false;
+        });
+    }
+    if (samlAutoBtn) {
+        samlAutoBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            if (samlNextBtn) samlNextBtn.disabled = true;
+            // Reset first
+            samlStep = 0;
+            samlLog.innerHTML = '';
+            if (samlPkt) samlPkt.style.opacity = '0';
+            samlSim.querySelectorAll('.demo-node').forEach(n => n.classList.remove('demo-node-active'));
+            updateSamlCounter();
+            // Play all steps
+            for (let i = 0; i < samlStepsData.length; i++) {
+                await samlAdvanceStep();
+                await sleep(300);
+            }
+            this.disabled = false;
         });
     }
 
