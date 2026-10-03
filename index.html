@@ -19,6 +19,7 @@
                 <a href="#protocols">Protocols</a>
                 <a href="#infrastructure">Infrastructure</a>
                 <a href="#database">Database</a>
+                <a href="#ad-identity">AD &amp; Identity</a>
             </div>
         </nav>
 
@@ -162,6 +163,26 @@
                         <a href="#join">JOIN</a>
                         <a href="#index">Index</a>
                         <a href="#transactions">Transactions</a>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav-group">
+                    <a class="section-link" href="#ad-identity">AD &amp; Identity</a>
+                    <div class="sidebar-nav-links">
+                        <a href="#what-is-domain">What is a Domain</a>
+                        <a href="#azure-ad-domain">Azure AD Domain</a>
+                        <a href="#workgroup-vs-domain">Workgroup vs AD Domain</a>
+                        <a href="#ad-architecture">AD Architecture</a>
+                        <a href="#ad-objects">AD Object Types</a>
+                        <a href="#ldap-query">LDAP Query</a>
+                        <a href="#dc-sync">Domain Controller Sync</a>
+                        <a href="#gpo">Group Policy Object</a>
+                        <a href="#local-security-policy">Local Security Policy</a>
+                        <a href="#local-sam">What is Local SAM</a>
+                        <a href="#what-is-idp">What is an IdP</a>
+                        <a href="#ldap-protocol">LDAP Protocol</a>
+                        <a href="#saml">SAML</a>
+                        <a href="#oauth">OAuth</a>
                     </div>
                 </div>
             </nav>
@@ -1624,6 +1645,835 @@ COMMIT;
                             <p class="reference-links"><a href="https://learn.microsoft.com/sql/t-sql/language-elements/transactions-transact-sql" target="_blank" rel="noreferrer">Transactions in T-SQL</a><a href="https://en.wikipedia.org/wiki/ACID" target="_blank" rel="noreferrer">ACID model</a></p>
                         </div>
                     </details>
+                </div>
+            </section>
+
+            <!-- ══════════════════════════════════════════════════════════
+                 5. AD DOMAINS & IDENTITY
+            ══════════════════════════════════════════════════════════ -->
+            <section class="chapter" id="ad-identity" data-topic-group="ad-identity">
+                <div class="chapter-heading">
+                    <div>
+                        <p class="eyebrow">5. AD Domains &amp; Identity</p>
+                        <h2>How Windows networks manage users, policies, and authentication</h2>
+                    </div>
+                    <p>
+                        Active Directory and identity protocols are the backbone of enterprise Windows environments.
+                        This section covers domains, domain controllers, group policy, and the modern identity protocols
+                        (LDAP, SAML, OAuth) that power single sign-on and federated identity.
+                    </p>
+                </div>
+
+                <div class="diagram-card">
+                    <h3>AD Authentication Flow</h3>
+                    <svg viewBox="0 0 800 200" role="img" aria-label="Active Directory authentication flow">
+                        <rect x="20" y="74" width="110" height="52" rx="16"></rect>
+                        <rect x="180" y="74" width="130" height="52" rx="16"></rect>
+                        <rect x="360" y="74" width="130" height="52" rx="16"></rect>
+                        <rect x="540" y="74" width="130" height="52" rx="16"></rect>
+                        <rect x="700" y="74" width="80" height="52" rx="16"></rect>
+                        <path d="M130 100 H180" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M310 100 H360" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M490 100 H540" stroke-width="6" stroke-linecap="round"></path>
+                        <path d="M670 100 H700" stroke-width="6" stroke-linecap="round"></path>
+                        <text x="75" y="103" text-anchor="middle" font-size="13">User</text>
+                        <text x="245" y="103" text-anchor="middle" font-size="13">Domain Join</text>
+                        <text x="425" y="103" text-anchor="middle" font-size="13">DC / Kerberos</text>
+                        <text x="605" y="103" text-anchor="middle" font-size="13">GPO Applied</text>
+                        <text x="740" y="103" text-anchor="middle" font-size="11">Access</text>
+                        <text x="400" y="172" text-anchor="middle">Domain logon: user → DC authenticates → ticket issued → policy applied → resource access.</text>
+                    </svg>
+                </div>
+
+                <div class="topic-list">
+
+                    <!-- ── What is a Domain ── -->
+                    <details class="topic-card" id="what-is-domain" open data-tags="domain active directory windows network trust kerberos dns">
+                        <summary><span>What is a Domain</span><span>A centrally managed boundary of Windows computers and users</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A Windows domain is a logical group of computers, users, and devices that share a common directory database and security policies, all managed centrally by one or more <strong>Domain Controllers (DCs)</strong>.</p>
+                            <p><strong>The three things a domain gives you:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Centralized authentication</strong> — users log in once with a single domain account and can access resources across all domain-joined machines (single sign-on via Kerberos).</li>
+                                <li><strong>Centralized management</strong> — administrators push settings, software, and security policies to all computers via Group Policy Objects (GPOs).</li>
+                                <li><strong>Centralized directory</strong> — Active Directory stores all user accounts, computer accounts, groups, and resources in one searchable database.</li>
+                            </ul>
+                            <p><strong>Real-life analogy:</strong> Think of a domain like a company's HR system. All employee records, access rights, and rules are in one place. When you join the company (domain-join a PC), you automatically get the right policies and can log in from any company desk.</p>
+                            <p><strong>Domain name:</strong> A domain has a DNS name like <code>corp.contoso.com</code>. Every domain-joined machine registers its hostname in that domain's DNS.</p>
+                            <pre><code># Check if a Windows machine is domain-joined:
+(Get-WmiObject Win32_ComputerSystem).PartOfDomain   # True / False
+(Get-WmiObject Win32_ComputerSystem).Domain          # corp.contoso.com
+
+# Verify your current domain and logged-on user:
+whoami /all
+echo %USERDOMAIN%
+
+# Join a machine to a domain (PowerShell, requires admin):
+Add-Computer -DomainName "corp.contoso.com" -Credential corp\admin -Restart</code></pre>
+                            <table>
+                                <thead><tr><th>Concept</th><th>Meaning</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Domain Controller (DC)</td><td>Server that runs AD DS and handles logins, LDAP queries, GPO delivery</td></tr>
+                                    <tr><td>Domain-joined PC</td><td>Computer registered in the domain; policies apply automatically</td></tr>
+                                    <tr><td>Domain user account</td><td>Account stored in AD; works on any domain-joined machine</td></tr>
+                                    <tr><td>Trust relationship</td><td>Allows users in one domain to access resources in another</td></tr>
+                                    <tr><td>Forest</td><td>Collection of one or more domains sharing a schema and global catalog</td></tr>
+                                </tbody>
+                            </table>
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview" target="_blank" rel="noreferrer">AD DS overview</a>
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-the-active-directory-logical-model" target="_blank" rel="noreferrer">AD logical model</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── Azure AD Domain ── -->
+                    <details class="topic-card" id="azure-ad-domain" data-tags="azure ad entra id cloud identity microsoft 365 hybrid tenant">
+                        <summary><span>Azure AD / Entra ID Domain</span><span>Cloud-based identity and access management for modern environments</span></summary>
+                        <div class="topic-body">
+                            <p><strong>What is Azure AD?</strong> Azure Active Directory (now rebranded as <strong>Microsoft Entra ID</strong>) is Microsoft's cloud-based identity and access management service. It is NOT just "Active Directory in the cloud" — it is a fundamentally different system built for cloud, SaaS, and mobile use cases.</p>
+
+                            <p><strong>Key differences from on-premises AD:</strong></p>
+                            <table>
+                                <thead><tr><th>Feature</th><th>On-Prem Active Directory</th><th>Azure AD / Entra ID</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Protocol</td><td>Kerberos, NTLM, LDAP</td><td>OAuth 2.0, OpenID Connect, SAML</td></tr>
+                                    <tr><td>Structure</td><td>Forests, domains, OUs, GPOs</td><td>Tenants, directories, app registrations</td></tr>
+                                    <tr><td>Join type</td><td>Domain Join (requires network line of sight to DC)</td><td>Azure AD Join / Entra Join (internet only)</td></tr>
+                                    <tr><td>Policy delivery</td><td>Group Policy Objects (GPOs)</td><td>Intune MDM / Conditional Access policies</td></tr>
+                                    <tr><td>Target</td><td>Windows servers and PCs in an office</td><td>Cloud apps, Microsoft 365, remote users</td></tr>
+                                    <tr><td>Directory query</td><td>LDAP</td><td>Microsoft Graph API (REST/JSON)</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>Azure AD Custom Domain:</strong> By default your tenant uses <code>yourcompany.onmicrosoft.com</code>. You can add a custom domain like <code>contoso.com</code> by verifying a DNS TXT record in your public DNS zone.</p>
+
+                            <p><strong>Common deployment models:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Cloud-only</strong> — users exist only in Azure AD. No on-prem AD. Perfect for startups and Microsoft 365 organisations.</li>
+                                <li><strong>Hybrid (synced)</strong> — on-prem AD synced to Azure AD via <strong>Microsoft Entra Connect (AD Connect)</strong>. Users log into Windows with their on-prem account, but also get cloud app access.</li>
+                                <li><strong>Azure AD DS (AADDS)</strong> — Microsoft-managed domain controllers in Azure. Provides LDAP, Kerberos, NTLM for legacy apps running in Azure VMs without running your own DCs.</li>
+                            </ul>
+
+                            <pre><code># Verify Azure AD join status on a Windows device:
+dsregcmd /status
+
+# Key fields to look for:
+AzureAdJoined : YES          # device is Azure AD joined
+DomainJoined  : NO           # no on-prem domain
+TenantName    : contoso      # your Azure AD tenant
+
+# Add a custom domain via Azure CLI:
+az ad domain create --domain-name contoso.com
+# Then add the TXT record to your public DNS as shown in Azure portal</code></pre>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/entra/fundamentals/whatis" target="_blank" rel="noreferrer">What is Microsoft Entra ID?</a>
+                                <a href="https://learn.microsoft.com/entra/identity/hybrid/connect/whatis-azure-ad-connect" target="_blank" rel="noreferrer">Entra Connect (sync)</a>
+                                <a href="https://learn.microsoft.com/entra/identity/devices/concept-directory-join" target="_blank" rel="noreferrer">Azure AD Join</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── Workgroup vs AD Domain ── -->
+                    <details class="topic-card" id="workgroup-vs-domain" data-tags="workgroup domain join standalone local account peer to peer">
+                        <summary><span>Workgroup vs AD Domain</span><span>Peer-to-peer local trust vs centrally managed environments</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Workgroup:</strong> the default Windows networking model. Each computer is standalone — it manages its own local users and security. There is no central authority. If you want to share a folder with another computer, you must create the same local user account on both machines.</p>
+                            <p><strong>AD Domain:</strong> a centrally managed environment. One domain controller holds all user accounts and policies. Any domain-joined PC can authenticate a user without local account setup.</p>
+
+                            <table>
+                                <thead><tr><th>Characteristic</th><th>Workgroup</th><th>AD Domain</th></tr></thead>
+                                <tbody>
+                                    <tr><td>User accounts</td><td>Local, per-machine</td><td>Centralized in Active Directory</td></tr>
+                                    <tr><td>Authentication</td><td>Local SAM database</td><td>Kerberos / NTLM via Domain Controller</td></tr>
+                                    <tr><td>Policy enforcement</td><td>Local Group Policy only</td><td>Domain Group Policy (GPOs)</td></tr>
+                                    <tr><td>Password reset</td><td>Admin on each machine</td><td>Domain admin, self-service portal</td></tr>
+                                    <tr><td>Scalability</td><td>Small (≤ 10–20 PCs)</td><td>Thousands of machines and users</td></tr>
+                                    <tr><td>Single Sign-On</td><td>No</td><td>Yes (Kerberos tickets)</td></tr>
+                                    <tr><td>Software deployment</td><td>Manual per machine</td><td>GPO / SCCM / Intune push</td></tr>
+                                    <tr><td>Typical use</td><td>Home, small home office</td><td>Business, enterprise, school networks</td></tr>
+                                </tbody>
+                            </table>
+
+                            <pre><code># Check current workgroup or domain:
+Get-WmiObject Win32_ComputerSystem | Select-Object Name, PartOfDomain, Domain, Workgroup
+
+# Switch from Workgroup to Domain:
+Add-Computer -DomainName "corp.contoso.com" -Credential corp\admin -Restart
+
+# Switch back to Workgroup:
+Remove-Computer -WorkgroupName "WORKGROUP" -Credential corp\admin -Restart</code></pre>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview" target="_blank" rel="noreferrer">AD DS overview</a>
+                                <a href="https://support.microsoft.com/windows/join-a-domain-or-workgroup-in-windows-cb11d0a1-6bfe-3c45-75e3-4db6c4e05765" target="_blank" rel="noreferrer">Join a domain or workgroup</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── Active Directory Architecture ── -->
+                    <details class="topic-card" id="ad-architecture" data-tags="active directory architecture forest domain tree ou site replication schema global catalog">
+                        <summary><span>Active Directory Architecture</span><span>How forests, domains, trees, and OUs are organized</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Active Directory Domain Services (AD DS)</strong> uses a hierarchical, distributed database. Understanding its four logical layers is essential for designing and troubleshooting enterprise networks.</p>
+
+                            <p><strong>Logical layers — from largest to smallest:</strong></p>
+                            <ol style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.9">
+                                <li><strong>Forest</strong> — the top-level container. All domains in a forest share the same <em>schema</em> (object definitions) and <em>global catalog</em>. A forest is the security boundary in AD — trust does not automatically extend beyond it.</li>
+                                <li><strong>Tree</strong> — a collection of one or more domains that share a contiguous DNS namespace. Example: <code>contoso.com</code> → <code>eu.contoso.com</code> → <code>uk.eu.contoso.com</code>.</li>
+                                <li><strong>Domain</strong> — the core administrative unit. Holds users, computers, groups, and policies. Has its own domain controllers.</li>
+                                <li><strong>Organizational Unit (OU)</strong> — a container within a domain used to organize objects and delegate administration. GPOs are linked to OUs.</li>
+                            </ol>
+
+                            <p><strong>Physical layer — Sites and Subnets:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>AD Site</strong> — represents a physical location (office, data center) with reliable, fast network links. AD uses sites to control replication traffic and ensure clients authenticate against a nearby DC (site-aware logon).</li>
+                                <li><strong>Subnet</strong> — IP subnet ranges associated with a site. When a client logs in, AD looks up its IP to find its site.</li>
+                                <li><strong>Site Link</strong> — defines replication schedule and cost between sites. Default replication interval is 180 minutes across site links.</li>
+                            </ul>
+
+                            <p><strong>Key global infrastructure components:</strong></p>
+                            <table>
+                                <thead><tr><th>Component</th><th>Role</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Domain Controller (DC)</td><td>Holds a read-write copy of the AD database for its domain. Handles Kerberos, LDAP, GPO, and DNS.</td></tr>
+                                    <tr><td>Global Catalog (GC)</td><td>DC with a partial copy of all objects across all domains in the forest. Needed for UPN logon and forest-wide searches.</td></tr>
+                                    <tr><td>Schema Master</td><td>FSMO role; one per forest. Only this DC can make schema changes (e.g., adding new object attributes).</td></tr>
+                                    <tr><td>PDC Emulator</td><td>FSMO role; one per domain. Handles password changes, time sync, and legacy NT compatibility.</td></tr>
+                                    <tr><td>RID Master</td><td>FSMO role; allocates RID pools so each DC can create unique security IDs (SIDs).</td></tr>
+                                    <tr><td>Infrastructure Master</td><td>FSMO role; maintains cross-domain object references.</td></tr>
+                                    <tr><td>DNS Server</td><td>AD depends on DNS. DCs register SRV records so clients can find them (e.g., <code>_ldap._tcp.dc._msdcs.contoso.com</code>).</td></tr>
+                                </tbody>
+                            </table>
+
+                            <pre><code># View domain and forest info:
+Get-ADDomain
+Get-ADForest
+
+# Find all domain controllers:
+Get-ADDomainController -Filter *
+
+# Find which DC holds which FSMO role:
+Get-ADDomain | Select-Object PDCEmulator, RIDMaster, InfrastructureMaster
+Get-ADForest | Select-Object SchemaMaster, DomainNamingMaster
+
+# List all OUs in the domain:
+Get-ADOrganizationalUnit -Filter * | Select-Object Name, DistinguishedName</code></pre>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/plan/understanding-the-active-directory-logical-model" target="_blank" rel="noreferrer">AD logical model</a>
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/plan/active-directory-integrated-dns-zones" target="_blank" rel="noreferrer">AD and DNS</a>
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/plan/planning-operations-master-role-placement" target="_blank" rel="noreferrer">FSMO roles</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── AD Object Types ── -->
+                    <details class="topic-card" id="ad-objects" data-tags="active directory objects user computer group ou contact printer service account schema attribute">
+                        <summary><span>Types of Objects in Active Directory</span><span>Users, computers, groups, OUs and the attributes that describe them</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Everything in Active Directory is an object.</strong> An object is a record in the AD database defined by a <em>class</em> (type), a set of <em>attributes</em> (properties), and a globally unique identifier called a <strong>GUID</strong> and a security identifier called a <strong>SID</strong>.</p>
+
+                            <table>
+                                <thead><tr><th>Object Type</th><th>Purpose</th><th>Key Attributes</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>User</strong></td><td>Represents a person with an account. Used for authentication and resource access.</td><td>sAMAccountName, userPrincipalName (UPN), displayName, memberOf, pwdLastSet</td></tr>
+                                    <tr><td><strong>Computer</strong></td><td>Represents a domain-joined machine. Has its own password renewed every 30 days.</td><td>dNSHostName, operatingSystem, lastLogonTimestamp, servicePrincipalName</td></tr>
+                                    <tr><td><strong>Group</strong></td><td>Collections of users/computers for permissions. Security groups control access; Distribution groups are for email.</td><td>groupType, member, memberOf, scope (domain local / global / universal)</td></tr>
+                                    <tr><td><strong>Organizational Unit (OU)</strong></td><td>Container to organize objects and delegate admin control. GPOs are linked here.</td><td>name, distinguishedName, gPLink</td></tr>
+                                    <tr><td><strong>Contact</strong></td><td>External email address in the GAL. Not a security principal — cannot log in.</td><td>mail, displayName</td></tr>
+                                    <tr><td><strong>Service Account</strong></td><td>Accounts used by services/applications instead of people. Managed Service Accounts (MSA) auto-rotate passwords.</td><td>servicePrincipalName, passwordNeverExpires, managedBy</td></tr>
+                                    <tr><td><strong>Printer / Shared Folder</strong></td><td>Published network resources that users can search in AD.</td><td>serverName, printShareName, uNCName</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>Distinguished Name (DN):</strong> Every AD object has a unique DN that describes its full path in the hierarchy:</p>
+                            <pre><code>CN=John Smith,OU=Finance,OU=Users,DC=corp,DC=contoso,DC=com
+
+# Components:
+CN = Common Name (object name)
+OU = Organizational Unit (container)
+DC = Domain Component (DNS label of the domain)
+
+# PowerShell: find a user and list their attributes:
+Get-ADUser -Identity "jsmith" -Properties * | Select-Object DisplayName, EmailAddress, MemberOf, LastLogonDate
+
+# Find all computers in an OU:
+Get-ADComputer -SearchBase "OU=Laptops,DC=corp,DC=contoso,DC=com" -Filter *
+
+# List all security groups a user belongs to:
+(Get-ADUser "jsmith" -Properties MemberOf).MemberOf</code></pre>
+
+                            <p><strong>Group Scope — which resources can they control?</strong></p>
+                            <table>
+                                <thead><tr><th>Scope</th><th>Members from</th><th>Can control resources in</th><th>Best use</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Domain Local</td><td>Any domain in forest</td><td>Same domain only</td><td>Assign permissions to resources</td></tr>
+                                    <tr><td>Global</td><td>Same domain only</td><td>Any domain in forest</td><td>Group users with similar roles</td></tr>
+                                    <tr><td>Universal</td><td>Any domain in forest</td><td>Any domain in forest</td><td>Cross-domain role assignments</td></tr>
+                                </tbody>
+                            </table>
+                            <p><strong>AGDLP rule of thumb:</strong> put <em>Accounts</em> into <em>Global groups</em>, put Global groups into <em>Domain Local groups</em>, apply <em>Permissions</em> to Domain Local groups.</p>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/manage/understand-security-groups" target="_blank" rel="noreferrer">Security groups</a>
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/manage/service-accounts/managed-service-accounts-overview" target="_blank" rel="noreferrer">Managed service accounts</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── LDAP Query ── -->
+                    <details class="topic-card" id="ldap-query" data-tags="ldap query filter search base dn attribute powershell ldifde">
+                        <summary><span>LDAP Query</span><span>Search Active Directory objects with filter expressions</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> LDAP (Lightweight Directory Access Protocol) is the wire protocol Active Directory uses for directory lookups. An LDAP query tells the directory: <em>search starting here</em>, <em>match objects that satisfy this filter</em>, <em>and return these attributes</em>.</p>
+
+                            <p><strong>An LDAP query has three parts:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Search Base</strong> — where in the directory tree to start (e.g., <code>DC=corp,DC=contoso,DC=com</code>).</li>
+                                <li><strong>Scope</strong> — how deep to search: <em>Base</em> (just the base object), <em>OneLevel</em> (one level deep), or <em>Subtree</em> (entire subtree below base).</li>
+                                <li><strong>Filter</strong> — an expression that selects objects. Uses prefix (Polish) notation enclosed in parentheses.</li>
+                            </ul>
+
+                            <p><strong>LDAP filter syntax:</strong></p>
+                            <pre><code># Basic format: (attribute=value)
+
+# Find all users:
+(objectClass=user)
+
+# Find a specific user by sAMAccountName:
+(sAMAccountName=jsmith)
+
+# Find all enabled user accounts:
+(&amp;(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+
+# Find all members of the "Domain Admins" group:
+(memberOf=CN=Domain Admins,CN=Users,DC=corp,DC=contoso,DC=com)
+
+# Find users whose accounts are locked out:
+(lockoutTime&gt;=1)
+
+# Find computers running Windows 10:
+(&amp;(objectClass=computer)(operatingSystem=Windows 10*))
+
+# Compound filter — users in Finance OU who are enabled:
+(&amp;(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2))(department=Finance))
+
+# Boolean operators:
+# &amp; = AND    | = OR    ! = NOT</code></pre>
+
+                            <p><strong>Running LDAP queries with PowerShell:</strong></p>
+                            <pre><code># Using Get-ADUser with LDAP filter:
+Get-ADUser -LDAPFilter "(department=Finance)" -Properties Department, Title
+
+# Using .NET DirectorySearcher (works without RSAT tools):
+$searcher = New-Object System.DirectoryServices.DirectorySearcher
+$searcher.Filter = "(&amp;(objectClass=user)(sAMAccountName=jsmith))"
+$searcher.SearchRoot = "LDAP://DC=corp,DC=contoso,DC=com"
+$searcher.PropertiesToLoad.AddRange(@("displayName","mail","memberOf"))
+$result = $searcher.FindOne()
+$result.Properties["displayName"]
+
+# ldp.exe — built-in GUI LDAP browser (run from any Windows machine)
+# dsquery — command-line AD query tool:
+dsquery user -name "John*" -limit 50
+dsquery computer -inactive 4   # computers inactive for 4+ weeks</code></pre>
+
+                            <p><strong>Common userAccountControl bit flags:</strong></p>
+                            <table>
+                                <thead><tr><th>Bit value</th><th>Meaning</th></tr></thead>
+                                <tbody>
+                                    <tr><td>2</td><td>Account disabled</td></tr>
+                                    <tr><td>512</td><td>Normal user account (enabled)</td></tr>
+                                    <tr><td>65536</td><td>Password never expires</td></tr>
+                                    <tr><td>8388608</td><td>Password not required</td></tr>
+                                </tbody>
+                            </table>
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows/win32/adsi/search-filter-syntax" target="_blank" rel="noreferrer">LDAP filter syntax</a>
+                                <a href="https://learn.microsoft.com/troubleshoot/windows-server/active-directory/useraccountcontrol-manipulate-account-properties" target="_blank" rel="noreferrer">userAccountControl flags</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── Domain Controller Sync ── -->
+                    <details class="topic-card" id="dc-sync" data-tags="domain controller replication sync drsync kcc site link conflict usn">
+                        <summary><span>Domain Controller Sync</span><span>How changes propagate across all domain controllers</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> Active Directory is a <em>multi-master</em> replicated database. Every writable DC holds a full copy of the domain's AD database. When you create a user on DC1, that change must replicate to DC2, DC3, and so on. This process is called <strong>AD replication</strong>.</p>
+
+                            <p><strong>How replication works:</strong></p>
+                            <ol style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.9">
+                                <li><strong>USN (Update Sequence Number)</strong> — every change to the AD database increments a USN counter on the originating DC. DCs track which USN they last received from each partner to know what's new.</li>
+                                <li><strong>KCC (Knowledge Consistency Checker)</strong> — a process that runs on every DC every 15 minutes. It automatically builds an efficient replication topology (ring or full mesh) based on the site and site-link configuration.</li>
+                                <li><strong>Intra-site replication</strong> — within a site, changes replicate within <strong>15 seconds</strong> by default (urgent notifications). DCs notify partners of changes immediately.</li>
+                                <li><strong>Inter-site replication</strong> — between sites, replication runs on a schedule defined by site links (default: every 180 minutes). Traffic is compressed to save WAN bandwidth.</li>
+                                <li><strong>Conflict resolution</strong> — if two DCs modify the same attribute at the same time, the change with the higher version wins; tie-breakers use timestamp, then originating DC GUID.</li>
+                            </ol>
+
+                            <p><strong>SYSVOL replication</strong> — GPO files and logon scripts are stored in <code>SYSVOL</code> on each DC and replicated separately via <strong>DFS-R</strong> (Distributed File System Replication) in modern domains, or FRS in legacy domains.</p>
+
+                            <pre><code># Force replication from all partners (run on a DC):
+repadmin /syncall /AdeP
+
+# Check replication health:
+repadmin /replsummary
+repadmin /showrepl            # show all replication connections
+
+# View replication failures:
+repadmin /showrepl * /csv | ConvertFrom-Csv | Where-Object {$_.LastFailureStatus -ne 0}
+
+# Check SYSVOL replication status:
+dfsrdiag ReplicationState /Member:DC01
+Get-DfsReplicatedFolder -GroupName "Domain System Volume"
+
+# Show inbound replication metadata for a specific attribute:
+repadmin /showobjmeta DC01 "CN=John Smith,OU=Users,DC=corp,DC=contoso,DC=com"
+
+# Event logs for replication issues:
+# Windows Logs > Directory Service (Event IDs: 1311, 1388, 1864, 2042)</code></pre>
+
+                            <table>
+                                <thead><tr><th>Tool</th><th>Use</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>repadmin /replsummary</code></td><td>Quick health overview — shows largest replication lag per DC</td></tr>
+                                    <tr><td><code>repadmin /showrepl</code></td><td>All replication connections and last attempt / success time</td></tr>
+                                    <tr><td><code>repadmin /syncall</code></td><td>Force immediate full replication</td></tr>
+                                    <tr><td><code>dcdiag /test:replications</code></td><td>Comprehensive DC health check including replication</td></tr>
+                                    <tr><td>Active Directory Sites and Services</td><td>GUI to view/manage sites, site links, and replication connections</td></tr>
+                                </tbody>
+                            </table>
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts" target="_blank" rel="noreferrer">AD replication concepts</a>
+                                <a href="https://learn.microsoft.com/windows-server/administration/windows-commands/repadmin" target="_blank" rel="noreferrer">repadmin reference</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── Group Policy Object ── -->
+                    <details class="topic-card" id="gpo" data-tags="gpo group policy object ou site domain link preference computer user settings registry software">
+                        <summary><span>Group Policy Object (GPO)</span><span>Push settings, restrictions, and software across domain machines</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> A <abbr title="Group Policy Object">GPO</abbr> is a collection of settings that <abbr title="Active Directory">AD</abbr> can automatically push to computers and users in the domain. One <abbr title="Group Policy Object">GPO</abbr> can change registry keys, deploy software, set screen lock timers, disable <abbr title="Universal Serial Bus">USB</abbr> ports, configure firewall rules, map drives, and hundreds of other settings — all without touching each machine manually.</p>
+
+                            <p><strong><abbr title="Group Policy Object">GPO</abbr> processing order — the <abbr title="Local, Site, Domain, Organizational Unit">LSDOU</abbr> rule:</strong></p>
+                            <ol style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>L — Local</strong> — Local Computer Policy on the machine itself (applies to all local accounts). Applied <em>first</em>, so it has the lowest priority.</li>
+                                <li><strong>S — Site</strong> — <abbr title="Group Policy Objects">GPOs</abbr> linked to the <abbr title="Active Directory">AD</abbr> site (physical location). Applied second.</li>
+                                <li><strong>D — Domain</strong> — <abbr title="Group Policy Objects">GPOs</abbr> linked to the domain root. Applied third, overrides Site and Local.</li>
+                                <li><strong>OU — <abbr title="Organizational Unit">OU</abbr></strong> — <abbr title="Group Policy Objects">GPOs</abbr> linked to <abbr title="Organizational Units">OUs</abbr>, from parent <abbr title="Organizational Unit">OU</abbr> down to the child <abbr title="Organizational Unit">OU</abbr> the object lives in. Applied <em>last</em>, so the innermost <abbr title="Organizational Unit">OU</abbr> <abbr title="Group Policy Object">GPO</abbr> wins any conflict.</li>
+                            </ol>
+                            <p><strong>Why does OU GPO always win?</strong> Because <abbr title="Active Directory">AD</abbr> applies policies in the <abbr title="Local, Site, Domain, Organizational Unit">LSDOU</abbr> sequence and later-applied settings overwrite earlier ones for the same setting. The <abbr title="Organizational Unit">OU</abbr> is the last level processed, so its values are written last and take effect. Two exceptions override this behaviour: <strong>Enforced</strong> (formerly "No Override") — a higher-level <abbr title="Group Policy Object">GPO</abbr> marked Enforced cannot be overwritten by lower-level ones; and <strong>Block Inheritance</strong> — an <abbr title="Organizational Unit">OU</abbr> can block <abbr title="Group Policy Objects">GPOs</abbr> from parent levels from flowing down (but Enforced beats Block Inheritance).</p>
+
+                            <p><strong>Computer settings vs User settings:</strong></p>
+                            <table>
+                                <thead><tr><th>Setting type</th><th>When applied</th><th>Applies to</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Computer Configuration</td><td>During machine startup, then every 90 min</td><td>The computer regardless of who logs in</td></tr>
+                                    <tr><td>User Configuration</td><td>During user logon, then every 90 min</td><td>The user's profile regardless of which machine</td></tr>
+                                </tbody>
+                            </table>
+
+                            <pre><code># View GPOs in a domain:
+Get-GPO -All | Select-Object DisplayName, GpoStatus, CreationTime
+
+# See which GPOs are linked to an OU:
+Get-GPInheritance -Target "OU=Finance,DC=corp,DC=contoso,DC=com"
+
+# Force a GPO refresh immediately (run on the target machine):
+gpupdate /force
+
+# Computer settings only:
+gpupdate /target:computer /force
+
+# View what GPOs applied to the current user/machine:
+gpresult /r                  # text summary
+gpresult /h c:\gp-report.html   # HTML report
+
+# Check GPO processing on a remote machine:
+Invoke-GPUpdate -Computer "PC-FINANCE-01" -Force
+
+# Common GPO use cases:
+# - Password policy (minimum length, complexity, lockout)
+# - Disable removable storage (USB drives)
+# - Deploy software (.msi packages)
+# - Map network drives on logon
+# - Push registry settings
+# - Configure Windows Firewall rules
+# - Set desktop wallpaper or screensaver lock</code></pre>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/manage/group-policy/group-policy-overview" target="_blank" rel="noreferrer">Group Policy overview</a>
+                                <a href="https://learn.microsoft.com/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/dn789193(v=ws.11)" target="_blank" rel="noreferrer">GPO processing order</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── Local Security Policy ── -->
+                    <details class="topic-card" id="local-security-policy" data-tags="local security policy secpol password lockout audit rights gpedit standalone machine">
+                        <summary><span>Local Security Policy</span><span>Machine-level security settings when no domain GPO is available</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> The <strong>Local Security Policy</strong> (<code>secpol.msc</code>) is a subset of Local Group Policy that configures security settings for a single machine. It is the primary policy tool on standalone (non-domain-joined) machines, and it also applies to domain machines as the first layer before domain GPOs.</p>
+
+                            <p><strong>Key sections of Local Security Policy:</strong></p>
+                            <table>
+                                <thead><tr><th>Section</th><th>What you configure</th><th>Examples</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Account Policies → Password Policy</td><td>Password requirements</td><td>Min length 12, complexity required, max age 90 days</td></tr>
+                                    <tr><td>Account Policies → Account Lockout</td><td>Brute force protection</td><td>Lock after 5 bad attempts, reset after 30 min</td></tr>
+                                    <tr><td>Local Policies → Audit Policy</td><td>What events to log</td><td>Audit logon events, object access, privilege use</td></tr>
+                                    <tr><td>Local Policies → User Rights Assignment</td><td>Who can do what on this machine</td><td>Allow logon locally, Deny logon via RDP, Shut down the system</td></tr>
+                                    <tr><td>Local Policies → Security Options</td><td>Miscellaneous security settings</td><td>Require Ctrl+Alt+Del, rename Administrator account, UAC level</td></tr>
+                                    <tr><td>Windows Firewall with Advanced Security</td><td>Inbound / outbound firewall rules</td><td>Allow RDP only from 10.0.0.0/8, block all inbound by default</td></tr>
+                                </tbody>
+                            </table>
+
+                            <pre><code># Open Local Security Policy GUI:
+secpol.msc
+
+# Open full Local Group Policy Editor (also has non-security settings):
+gpedit.msc
+
+# Export local security settings to a file:
+secedit /export /cfg C:\security-baseline.cfg
+
+# Apply a security template to a machine:
+secedit /configure /db C:\temp\secedit.sdb /cfg C:\security-baseline.cfg /overwrite
+
+# View current password policy via PowerShell:
+Get-LocalUser | Select-Object Name, PasswordRequired, PasswordLastSet, Enabled
+
+# View account lockout policy:
+net accounts
+
+# Set lockout threshold via net accounts:
+net accounts /lockoutthreshold:5 /lockoutduration:30 /lockoutwindow:30</code></pre>
+
+                            <p><strong>Domain GPO vs Local Security Policy:</strong> When a machine is domain-joined, domain GPOs override conflicting Local Security Policy settings (because domain GPOs are processed after local). Local policy only "wins" for settings not covered by a domain GPO.</p>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows/security/threat-protection/security-policy-settings/security-policy-settings" target="_blank" rel="noreferrer">Security policy settings</a>
+                                <a href="https://learn.microsoft.com/windows/security/threat-protection/security-policy-settings/account-lockout-policy" target="_blank" rel="noreferrer">Account lockout policy</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── What is Local SAM ── -->
+                    <details class="topic-card" id="local-sam" data-tags="local sam security account manager local accounts windows workgroup standalone registry hive">
+                        <summary><span>What is Local <abbr title="Security Account Manager">SAM</abbr></span><span>The on-device user database that Windows uses when no domain is present</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> The <strong><abbr title="Security Account Manager">SAM</abbr> (Security Account Manager)</strong> is a Windows registry hive and database (<code>C:\Windows\System32\config\SAM</code>) that stores <em>local</em> user accounts and group memberships for a single machine. When you log in on a standalone or workgroup PC, Windows authenticates you directly against the local <abbr title="Security Account Manager">SAM</abbr> — no network, no domain controller required.</p>
+
+                            <p><strong>Where the SAM lives:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li>Registry hive path: <code>HKEY_LOCAL_MACHINE\SAM</code> (read-protected at runtime — even Administrators cannot open it directly).</li>
+                                <li>Physical file: <code>C:\Windows\System32\config\SAM</code> — locked by the OS while Windows is running.</li>
+                                <li>Password hashes are stored (historically LM hash, now NTLM hash), never plaintext.</li>
+                            </ul>
+
+                            <p><strong>What the SAM stores:</strong></p>
+                            <table>
+                                <thead><tr><th>What</th><th>Details</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Local user accounts</td><td>e.g., <code>Administrator</code>, <code>Guest</code>, any account you create locally</td></tr>
+                                    <tr><td>Local groups</td><td>e.g., <em>Administrators</em>, <em>Users</em>, <em>Remote Desktop Users</em></td></tr>
+                                    <tr><td>Password hashes</td><td>NTLM hash of each account's password</td></tr>
+                                    <tr><td>Account properties</td><td>Account enabled/disabled, last logon, password expiry, login count</td></tr>
+                                    <tr><td><abbr title="Security Identifier">SID</abbr></td><td>Each account gets a local Security Identifier unique to this machine</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>SAM vs Active Directory — key difference:</strong></p>
+                            <table>
+                                <thead><tr><th>Aspect</th><th>Local SAM</th><th>Active Directory</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Scope</td><td>One machine only</td><td>All domain-joined machines in the domain</td></tr>
+                                    <tr><td>Authentication</td><td>Local NTLM check on the same PC</td><td>Kerberos ticket via Domain Controller</td></tr>
+                                    <tr><td>Account portability</td><td>Usable only on the local machine</td><td>Usable on any domain-joined machine</td></tr>
+                                    <tr><td>Management tool</td><td><code>lusrmgr.msc</code> (Local Users and Groups)</td><td>Active Directory Users and Computers (<abbr title="Active Directory Users and Computers">ADUC</abbr>)</td></tr>
+                                    <tr><td>Password reset</td><td>Local admin on that machine</td><td>Domain admin or self-service portal</td></tr>
+                                    <tr><td>Single Sign-On</td><td>No</td><td>Yes (Kerberos)</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>When the SAM is used on a domain-joined machine:</strong> Even when a PC is domain-joined, the local <abbr title="Security Account Manager">SAM</abbr> still exists and contains the built-in <code>Administrator</code> account. Local accounts can still log in directly. Domain GPOs can control local accounts (e.g., rename or disable the local Administrator) via the <em>Restricted Groups</em> or <em>Local Users and Groups</em> preference.</p>
+
+                            <pre><code># List all local users on the machine:
+Get-LocalUser
+
+# List local groups:
+Get-LocalGroup
+
+# Create a local user:
+New-LocalUser -Name "svc-backup" -Password (ConvertTo-SecureString "P@ssw0rd!" -AsPlainText -Force) -FullName "Backup Service Account" -Description "Used by backup agent"
+
+# Add a local user to the local Administrators group:
+Add-LocalGroupMember -Group "Administrators" -Member "svc-backup"
+
+# Remove a local user:
+Remove-LocalUser -Name "svc-backup"
+
+# Disable the built-in local Administrator (security best practice):
+Disable-LocalUser -Name "Administrator"
+
+# Check the SAM hive (read-only, shows structure):
+reg query HKLM\SAM\SAM\Domains\Account\Users /s
+
+# View local account details:
+net user Administrator
+net localgroup Administrators</code></pre>
+
+                            <p><strong>Security considerations:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Pass-the-Hash risk:</strong> NTLM hashes stored in the <abbr title="Security Account Manager">SAM</abbr> can be extracted (with admin access) using tools like Mimikatz. An attacker with the hash can authenticate as that user without knowing the password.</li>
+                                <li><strong>SAM lock:</strong> Windows locks the SAM file while running. Offline attacks (booting from external media) can extract hashes — protect with BitLocker.</li>
+                                <li><strong>LAPS (<abbr title="Local Administrator Password Solution">Local Administrator Password Solution</abbr>):</strong> Microsoft tool that randomizes and rotates the local Administrator password on every domain-joined machine, storing it securely in AD — prevents lateral movement via shared local admin passwords.</li>
+                                <li><strong>Credential Guard:</strong> Windows 10/11 Enterprise feature that uses virtualization to protect NTLM hashes and Kerberos tickets from being extracted from memory.</li>
+                            </ul>
+
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/manage/understand-security-identifiers" target="_blank" rel="noreferrer">Security Identifiers (SIDs)</a>
+                                <a href="https://learn.microsoft.com/windows-server/identity/laps/laps-overview" target="_blank" rel="noreferrer">Microsoft LAPS</a>
+                                <a href="https://learn.microsoft.com/windows/security/identity-protection/credential-guard/credential-guard" target="_blank" rel="noreferrer">Credential Guard</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── What is an IdP ── -->
+                    <details class="topic-card" id="what-is-idp" data-tags="idp identity provider sso single sign on federation claims token authentication">
+                        <summary><span>What is an IdP (Identity Provider)</span><span>The trusted authority that authenticates users and issues tokens</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> An <strong>Identity Provider (IdP)</strong> is a system that creates, maintains, and manages identity information and provides authentication services to other applications and systems (called <em>Service Providers</em> or <em>Relying Parties</em>).</p>
+
+                            <p><strong>Simple analogy:</strong> Think of a passport. Your government (the IdP) issues the passport. When you arrive at a foreign airport (the Service Provider), the border agent trusts the passport without contacting your government directly for every traveler. The IdP vouches for your identity.</p>
+
+                            <p><strong>How IdP-based SSO works:</strong></p>
+                            <ol style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.9">
+                                <li>User tries to access an application (the Service Provider / Relying Party).</li>
+                                <li>App redirects the user to the IdP login page (because the app trusts this IdP).</li>
+                                <li>User enters credentials at the IdP (not at the app).</li>
+                                <li>IdP validates credentials, then issues a <strong>security token</strong> (JWT, SAML assertion, etc.) containing claims about the user (name, email, roles).</li>
+                                <li>The token is sent back to the app. The app validates the token's signature using the IdP's public key — and grants access.</li>
+                            </ol>
+
+                            <table>
+                                <thead><tr><th>IdP</th><th>Protocol used</th><th>Common use case</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Microsoft Entra ID (Azure AD)</td><td>OpenID Connect, OAuth 2.0, SAML</td><td>Microsoft 365, enterprise SaaS apps</td></tr>
+                                    <tr><td>Active Directory Federation Services (ADFS)</td><td>SAML 2.0, WS-Federation</td><td>On-prem apps with federated SSO</td></tr>
+                                    <tr><td>Okta</td><td>OpenID Connect, SAML, OAuth</td><td>Multi-cloud identity platform</td></tr>
+                                    <tr><td>Google Workspace</td><td>OpenID Connect, SAML</td><td>Google-ecosystem SSO</td></tr>
+                                    <tr><td>Keycloak</td><td>OpenID Connect, SAML, OAuth</td><td>Open-source, self-hosted IdP</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>Key terms:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Claims</strong> — key-value pairs in a token about the user (e.g., <code>email: "alice@contoso.com"</code>, <code>role: "admin"</code>).</li>
+                                <li><strong>Trust relationship</strong> — the SP must be configured to trust tokens from a specific IdP (registered via metadata URL or certificate exchange).</li>
+                                <li><strong>Federation</strong> — linking two identity systems so users from one can access resources in another without separate accounts.</li>
+                            </ul>
+                            <p class="reference-links">
+                                <a href="https://learn.microsoft.com/entra/fundamentals/whatis" target="_blank" rel="noreferrer">Microsoft Entra ID</a>
+                                <a href="https://openid.net/developers/how-connect-works/" target="_blank" rel="noreferrer">OpenID Connect explained</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── LDAP Protocol ── -->
+                    <details class="topic-card" id="ldap-protocol" data-tags="ldap lightweight directory access protocol port 389 636 bind search tls starttls">
+                        <summary><span>LDAP Protocol</span><span>The directory query protocol underneath Active Directory and other directories</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> <strong>LDAP (Lightweight Directory Access Protocol)</strong> is a standard application-layer protocol for accessing and maintaining distributed directory information services. It is the protocol that applications use to query Active Directory, OpenLDAP, Oracle Internet Directory, and other directory servers.</p>
+
+                            <p><strong>Key ports:</strong></p>
+                            <table>
+                                <thead><tr><th>Port</th><th>Use</th></tr></thead>
+                                <tbody>
+                                    <tr><td>389 / TCP+UDP</td><td>Standard LDAP (unencrypted or STARTTLS)</td></tr>
+                                    <tr><td>636 / TCP</td><td>LDAPS — LDAP over TLS (always encrypted, like HTTPS)</td></tr>
+                                    <tr><td>3268 / TCP</td><td>Global Catalog LDAP (forest-wide search)</td></tr>
+                                    <tr><td>3269 / TCP</td><td>Global Catalog LDAPS</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>LDAP operations:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Bind</strong> — authenticate to the directory (simple bind with username/password, or SASL/Kerberos).</li>
+                                <li><strong>Search</strong> — query objects matching a filter from a given base DN.</li>
+                                <li><strong>Add</strong> — create a new object.</li>
+                                <li><strong>Modify</strong> — change attributes of an existing object.</li>
+                                <li><strong>Delete</strong> — remove an object.</li>
+                                <li><strong>Unbind</strong> — close the connection.</li>
+                            </ul>
+
+                            <pre><code># Test LDAP connectivity with ldapsearch (Linux/macOS):
+ldapsearch -H ldap://dc01.corp.contoso.com \
+           -D "corp\svc-account" -w "Password123" \
+           -b "DC=corp,DC=contoso,DC=com" \
+           "(sAMAccountName=jsmith)" \
+           displayName mail memberOf
+
+# Test LDAPS (encrypted):
+ldapsearch -H ldaps://dc01.corp.contoso.com:636 \
+           -D "corp\svc-account" -w "Password123" \
+           -b "DC=corp,DC=contoso,DC=com" \
+           "(objectClass=user)" cn mail
+
+# PowerShell — LDAP bind and search without RSAT:
+$ldap = New-Object System.DirectoryServices.DirectoryEntry(
+    "LDAP://DC=corp,DC=contoso,DC=com",
+    "corp\svc-account",
+    "Password123"
+)
+$search = New-Object System.DirectoryServices.DirectorySearcher($ldap)
+$search.Filter = "(sAMAccountName=jsmith)"
+$search.FindOne().Properties
+
+# Check if LDAP port is open:
+Test-NetConnection -ComputerName dc01.corp.contoso.com -Port 389
+Test-NetConnection -ComputerName dc01.corp.contoso.com -Port 636</code></pre>
+
+                            <p><strong>Anonymous vs Authenticated LDAP:</strong> Modern Active Directory requires authenticated (bound) LDAP by default. Anonymous LDAP queries are blocked. Always use a dedicated service account with minimum permissions for application LDAP binds.</p>
+                            <p class="reference-links">
+                                <a href="https://datatracker.ietf.org/doc/html/rfc4511" target="_blank" rel="noreferrer">LDAP RFC 4511</a>
+                                <a href="https://learn.microsoft.com/windows-server/identity/ad-ds/manage/component-updates/ldap-considerations" target="_blank" rel="noreferrer">LDAP and AD</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── SAML ── -->
+                    <details class="topic-card" id="saml" data-tags="saml security assertion markup language sso federation assertion sp idp xml redirect post">
+                        <summary><span>SAML</span><span>XML-based SSO standard for enterprise federated identity</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> <strong>SAML 2.0 (Security Assertion Markup Language)</strong> is an XML-based open standard for exchanging authentication and authorization data between an <em>Identity Provider (IdP)</em> and a <em>Service Provider (SP)</em>. It is the dominant SSO protocol in enterprise environments — used heavily with SaaS applications, ADFS, Okta, and Azure AD.</p>
+
+                            <p><strong>SAML SSO flow (SP-initiated):</strong></p>
+                            <ol style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.9">
+                                <li>User visits the app (Service Provider) — e.g., <code>app.example.com/login</code>.</li>
+                                <li>App creates a SAML <strong>AuthnRequest</strong> (XML) and redirects the user's browser to the IdP with it.</li>
+                                <li>IdP presents a login page. User enters credentials.</li>
+                                <li>IdP validates credentials, then creates a signed <strong>SAML Assertion</strong> (XML document containing identity claims).</li>
+                                <li>The assertion is returned to the browser, which POSTs it to the app's <strong>Assertion Consumer Service (ACS)</strong> URL.</li>
+                                <li>App validates the assertion's signature using the IdP's public certificate. If valid, the user is logged in.</li>
+                            </ol>
+
+                            <pre><code>&lt;!-- Simplified SAML Assertion (what the IdP sends to the SP): --&gt;
+&lt;samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"&gt;
+  &lt;saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"&gt;
+    &lt;saml:Subject&gt;
+      &lt;saml:NameID Format="email"&gt;alice@contoso.com&lt;/saml:NameID&gt;
+    &lt;/saml:Subject&gt;
+    &lt;saml:AttributeStatement&gt;
+      &lt;saml:Attribute Name="displayName"&gt;
+        &lt;saml:AttributeValue&gt;Alice Smith&lt;/saml:AttributeValue&gt;
+      &lt;/saml:Attribute&gt;
+      &lt;saml:Attribute Name="role"&gt;
+        &lt;saml:AttributeValue&gt;admin&lt;/saml:AttributeValue&gt;
+      &lt;/saml:Attribute&gt;
+    &lt;/saml:AttributeStatement&gt;
+  &lt;/saml:Assertion&gt;
+&lt;/samlp:Response&gt;</code></pre>
+
+                            <table>
+                                <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+                                <tbody>
+                                    <tr><td>IdP (Identity Provider)</td><td>Authenticates the user and issues assertions (e.g., Azure AD, Okta, ADFS)</td></tr>
+                                    <tr><td>SP (Service Provider)</td><td>The application/service that the user wants to access (e.g., Salesforce, ServiceNow)</td></tr>
+                                    <tr><td>Assertion</td><td>Signed XML document containing claims about the authenticated user</td></tr>
+                                    <tr><td>ACS URL</td><td>Assertion Consumer Service URL — where the SP receives the assertion from the browser</td></tr>
+                                    <tr><td>Entity ID</td><td>Unique identifier for the SP or IdP in the SAML metadata</td></tr>
+                                    <tr><td>Metadata</td><td>XML file exchanged between IdP and SP to establish trust (contains certificates, endpoints)</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>SAML vs OpenID Connect:</strong> SAML is XML-based and dominant in enterprise / legacy SaaS. OpenID Connect is JSON/JWT-based and dominant in modern web and mobile apps. Both achieve federated SSO but use different formats and flows.</p>
+                            <p class="reference-links">
+                                <a href="https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf" target="_blank" rel="noreferrer">SAML 2.0 spec</a>
+                                <a href="https://learn.microsoft.com/entra/identity-platform/saml-protocol-reference" target="_blank" rel="noreferrer">Azure AD SAML reference</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <!-- ── OAuth ── -->
+                    <details class="topic-card" id="oauth" data-tags="oauth oauth2 authorization code flow token access token refresh token client credentials pkce openid connect jwt">
+                        <summary><span>OAuth 2.0</span><span>Delegated authorization — apps access resources on a user's behalf</span></summary>
+                        <div class="topic-body">
+                            <p><strong>Core concept:</strong> <strong>OAuth 2.0</strong> is an authorization framework (not an authentication protocol) that lets a user grant a third-party application limited access to their resources on another service — without giving the app their password.</p>
+
+                            <p><strong>Classic example:</strong> A photo printing app wants access to your Google Photos. Instead of giving it your Google password, you log into Google, approve the request, and Google gives the printing app an <em>access token</em> that only permits reading photos.</p>
+
+                            <p><strong>Key roles:</strong></p>
+                            <ul style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.8">
+                                <li><strong>Resource Owner</strong> — the user who owns the data.</li>
+                                <li><strong>Client</strong> — the third-party application requesting access.</li>
+                                <li><strong>Authorization Server</strong> — the IdP (e.g., Azure AD, Google, Okta) that issues tokens after the user consents.</li>
+                                <li><strong>Resource Server</strong> — the API that holds the protected data and validates access tokens.</li>
+                            </ul>
+
+                            <p><strong>Authorization Code Flow with PKCE (recommended for web + native apps):</strong></p>
+                            <ol style="margin:0.3rem 0 0.8rem;padding-left:1.4rem;line-height:1.9">
+                                <li>App redirects user to the Authorization Server with: <code>client_id</code>, <code>scope</code>, <code>redirect_uri</code>, <code>code_challenge</code> (PKCE).</li>
+                                <li>User logs in and consents.</li>
+                                <li>Authorization Server redirects back to the app with an <strong>authorization code</strong>.</li>
+                                <li>App exchanges the code + <code>code_verifier</code> for an <strong>access token</strong> (and optionally a refresh token) at the token endpoint.</li>
+                                <li>App uses the access token as a Bearer token in API calls: <code>Authorization: Bearer &lt;token&gt;</code>.</li>
+                            </ol>
+
+                            <pre><code># Step 1: Authorization request URL (browser redirect)
+https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize
+  ?client_id=YOUR_APP_ID
+  &amp;response_type=code
+  &amp;redirect_uri=https://app.example.com/callback
+  &amp;scope=openid profile email User.Read
+  &amp;code_challenge=BASE64URL(SHA256(verifier))
+  &amp;code_challenge_method=S256
+
+# Step 2: Exchange code for token (POST from app server)
+POST https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&amp;client_id=YOUR_APP_ID
+&amp;code=AUTH_CODE_FROM_STEP1
+&amp;redirect_uri=https://app.example.com/callback
+&amp;code_verifier=ORIGINAL_VERIFIER
+
+# Step 3: Call the API with the access token
+GET https://graph.microsoft.com/v1.0/me
+Authorization: Bearer eyJ0eXAiOiJKV1Q...
+
+# JWT access token payload (decoded):
+{
+  "aud": "https://graph.microsoft.com",
+  "iss": "https://login.microsoftonline.com/{tenant}/v2.0",
+  "sub": "AAAAAAAAAAAAAAAAAAAAAIkzqFVrSaSaFHy782bbtaQ",
+  "name": "Alice Smith",
+  "email": "alice@contoso.com",
+  "roles": ["User.Read"],
+  "exp": 1752345678
+}</code></pre>
+
+                            <table>
+                                <thead><tr><th>Grant type</th><th>When to use</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Authorization Code + PKCE</td><td>Web apps and native / mobile apps — most secure, recommended</td></tr>
+                                    <tr><td>Client Credentials</td><td>Machine-to-machine (daemon) — no user involved; service authenticates with a client secret or certificate</td></tr>
+                                    <tr><td>Device Code</td><td>Devices without browsers (TV, CLI tools) — user enters code on another device</td></tr>
+                                    <tr><td>Refresh Token</td><td>Get a new access token after the old one expires without re-prompting the user</td></tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>OAuth 2.0 vs OpenID Connect (OIDC):</strong> OAuth 2.0 is purely for <em>authorization</em> (access to resources). OpenID Connect is a thin identity layer on top of OAuth 2.0 that adds <em>authentication</em> — it returns an <strong>ID token</strong> (JWT) that confirms who the user is.</p>
+                            <p class="reference-links">
+                                <a href="https://datatracker.ietf.org/doc/html/rfc6749" target="_blank" rel="noreferrer">OAuth 2.0 RFC 6749</a>
+                                <a href="https://learn.microsoft.com/entra/identity-platform/v2-oauth2-auth-code-flow" target="_blank" rel="noreferrer">Authorization Code Flow (Azure)</a>
+                                <a href="https://openid.net/developers/how-connect-works/" target="_blank" rel="noreferrer">OpenID Connect</a>
+                            </p>
+                        </div>
+                    </details>
+
                 </div>
             </section>
 
