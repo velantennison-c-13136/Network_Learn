@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ═══════════════════════════════════════════════════════════════════
+     conf/context.xml — Global default Context settings for ALL web apps
+     ═══════════════════════════════════════════════════════════════════
+     This file applies to every Context (web app) deployed in Tomcat.
+     You can also place a context.xml inside a specific app at:
+       - META-INF/context.xml   (inside the .war — packaged with the app)
+       - conf/Catalina/localhost/myapp.xml  (per-app override, outside .war)
+
+     Priority (highest wins):
+       conf/Catalina/localhost/<appname>.xml
+         > META-INF/context.xml (inside .war)
+           > conf/context.xml (this file — global default)
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<Context>
+
+  <!-- ── WatchedResource ─────────────────────────────────────────── -->
+  <!-- Tomcat watches these files and reloads the context if they change.
+       Always keep web.xml here. Add your own config files if needed. -->
+  <WatchedResource>WEB-INF/web.xml</WatchedResource>
+  <WatchedResource>WEB-INF/tomcat-web.xml</WatchedResource>
+  <WatchedResource>${catalina.base}/conf/web.xml</WatchedResource>
+
+  <!-- ── Session persistence (file-based) ───────────────────────── -->
+  <!-- PersistentManager saves sessions to disk across restarts.
+       Useful for development; in production, prefer Redis or DB store. -->
+  <Manager className="org.apache.catalina.session.PersistentManager"
+           maxIdleSwap="30"
+           saveOnRestart="true">
+    <Store className="org.apache.catalina.session.FileStore"
+           directory="work/sessions"/>
+  </Manager>
+  <!-- To DISABLE session persistence (default behaviour without this file):
+       comment out the Manager block above. Tomcat uses StandardManager by default
+       which keeps sessions in memory only. -->
+
+  <!-- ── Global JNDI Resources (shared across all apps) ─────────── -->
+  <!-- Define connection pools and other resources available to every app.
+       Apps look these up via java:comp/env/... -->
+
+  <!-- PostgreSQL connection pool (HikariCP is not built-in; use DBCP2 here) -->
+  <!--
+    PostgreSQL pool attribute notes:
+      initialSize         — connections created at startup
+      maxTotal            — hard cap on total connections
+      maxIdle             — max idle connections in the pool
+      minIdle             — min idle connections kept open
+      maxWaitMillis       — wait up to 10s for a free connection
+      validationQuery     — test query to check connection health
+      testOnBorrow        — validate before each use
+      testWhileIdle       — validate idle connections
+      minEvictableIdleTimeMillis — evict idle connections after 60s
+      removeAbandonedOnBorrow    — reclaim stuck connections
+      removeAbandonedTimeout     — seconds before declared abandoned
+      logAbandoned               — log the stack trace
+  -->
+  <Resource name="jdbc/AppDB"
+            auth="Container"
+            type="javax.sql.DataSource"
+            factory="org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory"
+            driverClassName="org.postgresql.Driver"
+            url="jdbc:postgresql://db-host:5432/mydb?sslmode=require"
+            username="appuser"
+            password="apppass"
+            initialSize="5"
+            maxTotal="30"
+            maxIdle="10"
+            minIdle="5"
+            maxWaitMillis="10000"
+            validationQuery="SELECT 1"
+            testOnBorrow="true"
+            testWhileIdle="true"
+            timeBetweenEvictionRunsMillis="30000"
+            minEvictableIdleTimeMillis="60000"
+            removeAbandonedOnBorrow="true"
+            removeAbandonedTimeout="60"
+            logAbandoned="true"
+  />
+
+  <!-- MySQL connection pool example -->
+  <Resource name="jdbc/MySQL"
+            auth="Container"
+            type="javax.sql.DataSource"
+            factory="org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory"
+            driverClassName="com.mysql.cj.jdbc.Driver"
+            url="jdbc:mysql://mysql-host:3306/mydb?useSSL=true&amp;serverTimezone=UTC&amp;rewriteBatchedStatements=true"
+            username="mysqluser"
+            password="mysqlpass"
+            maxTotal="20"
+            maxIdle="10"
+            maxWaitMillis="8000"
+            validationQuery="SELECT 1"
+            testOnBorrow="true"
+  />
+
+  <!-- ── CookieProcessor — SameSite cookies ─────────────────────── -->
+  <!-- Enables SameSite=Strict on all session cookies (CSRF protection).
+       Requires Tomcat 9.0.28+ / 8.5.49+ -->
+  <CookieProcessor sameSiteCookies="strict"/>
+  <!-- Options: "strict" | "lax" | "none" (none requires Secure=true) -->
+
+</Context>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Per-app context file — conf/Catalina/localhost/myapp.xml
+     Place this file OUTSIDE the .war to keep deployment config separate.
+     Tomcat auto-loads it; changes here do NOT require restarting Tomcat.
+     ═══════════════════════════════════════════════════════════════════ -->
+<!--
+<Context path="/myapp"
+         docBase="/opt/apps/myapp.war"
+         reloadable="false"
+         crossContext="false"
+         sessionCookieHttpOnly="true"
+         sessionCookieSecure="true"
+         sessionCookieName="MYAPP_SESSION">
+
+  <!- - App-specific JNDI DataSource (overrides global conf/context.xml) - ->
+  <Resource name="jdbc/AppDB"
+            auth="Container"
+            type="javax.sql.DataSource"
+            factory="org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory"
+            driverClassName="com.mysql.cj.jdbc.Driver"
+            url="jdbc:mysql://localhost:3306/myapp_db?useSSL=true"
+            username="myapp_user"
+            password="myapp_pass"
+            maxTotal="15"
+            maxIdle="5"
+            validationQuery="SELECT 1"
+            testOnBorrow="true"/>
+
+  <!- - Environment entry — readable via JNDI inside the app - ->
+  <!- - In app: (String) ctx.lookup("java:comp/env/app/mode") - ->
+  <Environment name="app/mode"
+               type="java.lang.String"
+               value="production"
+               override="false"/>
+
+  <!- - IP-restrict access to this context (extra layer after Valve in server.xml) - ->
+  <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+         allow="10\.0\.1\.\d+|127\.0\.0\.1"
+         denyStatus="403"/>
+
+</Context>
+-->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     Manager/Host-Manager app context restriction — CRITICAL for security
+     File: webapps/manager/META-INF/context.xml
+            webapps/host-manager/META-INF/context.xml
+     Edit these files to restrict who can access the Manager web UI.
+     ═══════════════════════════════════════════════════════════════════ -->
+<!--
+<Context antiResourceLocking="false" privileged="true">
+
+  <!- - Only allow access from localhost - ->
+  <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+         allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1|10\.0\.1\.\d+"/>
+         <!- - Add your admin workstation subnet as needed - ->
+
+  <!- - CSRF protection for the Manager GUI - ->
+  <Manager sessionAttributeValueClassNameFilter="java\.lang\.(?:Boolean|Integer|Long|Number|String)|org\.apache\.catalina\.filters\.CsrfPreventionFilter\$LruCache(?:\$1)?|java\.util\.(?:Linked)?HashMap"/>
+
+</Context>
+-->

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ═══════════════════════════════════════════════════════
+     WEB-INF/web.xml — URL patterns, security & sessions
+     This file lives inside your .war under WEB-INF/
+     ═══════════════════════════════════════════════════════ -->
+
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="5.0">
+
+  <!-- ── Servlet Mapping ─────────────────────── -->
+  <servlet>
+    <servlet-name>ProductServlet</servlet-name>
+    <servlet-class>com.example.ProductServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ProductServlet</servlet-name>
+    <url-pattern>/products/*</url-pattern>
+    <!-- Matches: /products/, /products/42, /products/search -->
+  </servlet-mapping>
+
+  <!-- ── Filters ──────────────────────────────── -->
+  <filter>
+    <filter-name>AuthFilter</filter-name>
+    <filter-class>com.example.AuthFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>AuthFilter</filter-name>
+    <url-pattern>/admin/*</url-pattern>
+  </filter-mapping>
+
+  <!-- ── Session Config ───────────────────────── -->
+  <session-config>
+    <session-timeout>30</session-timeout>  <!-- minutes -->
+    <cookie-config>
+      <http-only>true</http-only>    <!-- no JS access -->
+      <secure>true</secure>           <!-- HTTPS only -->
+      <same-site>Strict</same-site>  <!-- CSRF protection -->
+    </cookie-config>
+    <tracking-mode>COOKIE</tracking-mode>
+  </session-config>
+
+  <!-- ── Security Constraints ─────────────────── -->
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Admin area</web-resource-name>
+      <url-pattern>/admin/*</url-pattern>
+      <http-method>GET</http-method>
+      <http-method>POST</http-method>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+    <!-- Force HTTPS for this protected area -->
+    <user-data-constraint>
+      <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+    </user-data-constraint>
+  </security-constraint>
+
+  <!-- Login configuration -->
+  <login-config>
+    <auth-method>FORM</auth-method>
+    <form-login-config>
+      <form-login-page>/login.jsp</form-login-page>
+      <form-error-page>/login-error.jsp</form-error-page>
+    </form-login-config>
+  </login-config>
+
+  <!-- ── Error pages ─────────────────────────── -->
+  <error-page>
+    <error-code>404</error-code>
+    <location>/WEB-INF/views/404.jsp</location>
+  </error-page>
+  <error-page>
+    <exception-type>java.lang.Exception</exception-type>
+    <location>/WEB-INF/views/error.jsp</location>
+  </error-page>
+
+  <!-- ── JNDI Lookup in web.xml ─────────────── -->
+  <resource-ref>
+    <res-ref-name>jdbc/MyDB</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+
+</web-app>

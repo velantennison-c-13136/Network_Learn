@@ -1531,8 +1531,7 @@ tr.demo-node-active td {
     content: counter(step);
     position: absolute;
     left: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0.55rem;
     width: 1.6rem;
     height: 1.6rem;
     border-radius: 50%;

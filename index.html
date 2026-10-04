@@ -628,14 +628,16 @@ write access logs</code></pre>
                             <!-- Step-by-step request lifecycle -->
                             <p><strong>Request lifecycle — step by step:</strong></p>
                             <ol class="server-steps">
-                                <li><strong>Client connects</strong> — Browser opens a <abbr title="Transmission Control Protocol">TCP</abbr> connection to Nginx on port 80 or 443.</li>
-                                <li><strong><abbr title="Transport Layer Security">TLS</abbr> handshake</strong> — If <abbr title="HyperText Transfer Protocol Secure">HTTPS</abbr>, Nginx terminates <abbr title="Transport Layer Security">TLS</abbr> using the SSL certificate stored on disk.</li>
-                                <li><strong>Request parsing</strong> — Nginx reads the <abbr title="HyperText Transfer Protocol">HTTP</abbr> request line and headers (e.g., <code>GET /index.html HTTP/1.1</code>).</li>
-                                <li><strong>Location matching</strong> — Nginx checks the config <code>location</code> blocks in order to decide what to do.</li>
-                                <li><strong>Static file? Serve it directly</strong> — If the path maps to a file on disk (e.g., <code>/var/www/html/logo.png</code>), Nginx sends it immediately — no app server needed.</li>
-                                <li><strong>Dynamic request? Proxy it</strong> — If the path needs application logic (e.g., <code>/api/users</code>), Nginx forwards it to an upstream app server via <code>proxy_pass</code>.</li>
-                                <li><strong>Response sent back</strong> — Nginx relays the response to the client, optionally compressing with gzip.</li>
-                                <li><strong>Access log written</strong> — Each request is recorded: IP, URL, status code, response time.</li>
+                                <li><strong>Client connects</strong> — The browser opens a TCP connection to Nginx on port 80 (HTTP) or 443 (HTTPS). Nginx's worker process picks it up. One worker can handle thousands of connections at once — no new thread is created per request.</li>
+                                <li><strong>TLS handshake (HTTPS only)</strong> — If the site uses HTTPS, Nginx does a security handshake with the browser: they agree on encryption, Nginx shows its SSL certificate, and both sides create a shared secret key. All data from this point is encrypted.</li>
+                                <li><strong>Read &amp; parse the request</strong> — Nginx reads what the browser sent: the URL, method (GET/POST), headers, and body. If the request is too large or malformed, Nginx rejects it with a <code>400 Bad Request</code> right here.</li>
+                                <li><strong>Pick the right server block</strong> — Nginx looks at the <code>Host</code> header (e.g., <code>example.com</code>) and finds the matching <code>server { }</code> block in its config. This is how one Nginx instance can host multiple websites on one IP.</li>
+                                <li><strong>Pick the right location block</strong> — Inside that server block, Nginx checks which <code>location</code> rule matches the URL path. Rules are checked in priority order: exact match first, then prefix rules, then regex patterns. The matched location decides what happens next.</li>
+                                <li><strong>Check access &amp; apply rewrites</strong> — Before serving anything, Nginx checks if the request is allowed (<code>allow</code>/<code>deny</code> rules, basic auth). It also runs any URL rewrite rules. If access is denied or a redirect is needed, Nginx responds immediately — no further steps.</li>
+                                <li><strong>Decide how to respond</strong> — Nginx picks one of two paths: serve a <strong>static file</strong> directly from disk (HTML, images, CSS), or <strong>forward the request</strong> to a backend app (Node.js, PHP, Python) using <code>proxy_pass</code>.</li>
+                                <li><strong>Talk to the backend (if proxying)</strong> — Nginx sends the request to the backend app server. It picks which backend to use based on a load-balancing rule (e.g., round-robin). It waits for the app's response, buffering it in memory.</li>
+                                <li><strong>Send the response back to the client</strong> — Nginx sends the HTTP response to the browser: status code (200, 404, etc.), headers (like <code>Content-Type</code>, security headers), and the body (HTML, JSON, image, etc.). It can compress the body with gzip to save bandwidth.</li>
+                                <li><strong>Log the request &amp; manage the connection</strong> — Nginx writes one line to the access log (IP, URL, status code, response time). Then it either closes the TCP connection or keeps it open for the next request — reusing connections is faster and saves resources.</li>
                             </ol>
 
                             <!-- Config example -->
@@ -673,6 +675,21 @@ server {
                                     <tr><td>Cache</td><td>Stores upstream responses to reduce load</td><td>proxy_cache_path</td></tr>
                                 </tbody>
                             </table>
+
+                            <!-- Important learning points -->
+                            <!-- <p><strong>⚡ Important points to know about Nginx:</strong></p>
+                            <ul style="margin:0.3rem 0 1rem;padding-left:1.4rem;line-height:1.9">
+                                <li><strong>Event-driven, non-blocking I/O</strong> — one worker process can handle thousands of connections simultaneously without spawning a thread per request. This is why Nginx uses far less memory than Apache under high load.</li>
+                                <li><strong><code>server</code> blocks are virtual hosts</strong> — you can host multiple domains on one Nginx instance by adding more <code>server { ... }</code> blocks, each matched by <code>server_name</code>.</li>
+                                <li><strong>Location block order matters</strong> — Nginx checks <code>location</code> blocks with a specific priority: exact match (<code>=</code>) &gt; longest prefix (<code>^~</code>) &gt; regex (<code>~</code>, <code>~*</code>) &gt; general prefix. A wrong order causes unexpected routing.</li>
+                                <li><strong>Always test config before reloading</strong> — run <code>sudo nginx -t</code> to syntax-check the config before applying it with <code>sudo systemctl reload nginx</code>. A bad config can take the server down.</li>
+                                <li><strong>HTTP/2 requires HTTPS</strong> — the <code>http2</code> parameter on <code>listen 443</code> only works if TLS is configured. HTTP/2 dramatically reduces page load time via multiplexing.</li>
+                                <li><strong><code>try_files $uri $uri/ /index.html</code></strong> — the SPA fallback. Without this, directly navigating to a path like <code>/protocols</code> would return a 404 because no such file exists on disk.</li>
+                                <li><strong>HSTS pins HTTPS in browsers</strong> — once a browser sees the <code>Strict-Transport-Security</code> header, it will refuse to connect over plain HTTP for the configured duration. Set this only after confirming HTTPS works.</li>
+                                <li><strong>Gzip saves bandwidth</strong> — enabling <code>gzip on</code> typically compresses HTML/CSS/JS by 60–80%, significantly improving Time-to-First-Byte on slow connections.</li>
+                                <li><strong>OCSP stapling reduces TLS handshake time</strong> — instead of the browser checking the certificate revocation list, Nginx fetches and caches it server-side, stapling it to the TLS handshake.</li>
+                                <li><strong>Block dotfiles in production</strong> — <code>location ~ /\.</code> prevents accidental exposure of <code>.git</code>, <code>.env</code>, or <code>.htpasswd</code> files that should never be publicly accessible.</li>
+                            </ul> -->
 
                             <p class="reference-links">
                                 <a href="https://nginx.org/en/docs/" target="_blank" rel="noreferrer">Official docs</a>
@@ -774,10 +791,28 @@ server {
                                 </tbody>
                             </table>
 
+                            <!-- Important learning points -->
+                            <!-- <p><strong>🪶 Important points to know about Apache HTTP Server &amp; <code>.htaccess</code>:</strong></p>
+                            <ul style="margin:0.3rem 0 1rem;padding-left:1.4rem;line-height:1.9">
+                                <li><strong><code>.htaccess</code> is a per-directory config override</strong> — it lets you configure Apache on a directory-by-directory basis without touching the main <code>httpd.conf</code>. This is what makes Apache popular on shared hosting — each tenant can control their own directory rules.</li>
+                                <li><strong><code>.htaccess</code> has a performance cost</strong> — Apache reads and parses <code>.htaccess</code> on <em>every request</em> by walking up the directory tree. On high-traffic sites, disable it with <code>AllowOverride None</code> in the main config and move rules there instead.</li>
+                                <li><strong><code>AllowOverride</code> must be enabled</strong> — <code>.htaccess</code> only works if the Apache virtual host or directory block says <code>AllowOverride All</code> (or the specific directives you use). Without it, the file is silently ignored.</li>
+                                <li><strong><code>mod_rewrite</code> rules are processed top-to-bottom</strong> — the first matching <code>RewriteRule</code> wins (unless you use flags). The <code>[L]</code> flag means "last rule — stop processing." Without it, Apache keeps testing more rules even after a match.</li>
+                                <li><strong><code>RewriteCond</code> always applies to the next <code>RewriteRule</code></strong> — conditions do not stack across multiple rules. Each <code>RewriteRule</code> needs its own preceding <code>RewriteCond</code> lines.</li>
+                                <li><strong>The <code>always</code> keyword in <code>Header always set</code> is critical</strong> — without it, Apache only sets the header on 2xx responses. Using <code>always</code> ensures security headers are sent on 3xx, 4xx, and 5xx responses too — which is what browsers actually need.</li>
+                                <li><strong>Module availability varies</strong> — directives wrapped in <code>&lt;IfModule&gt;</code> are skipped gracefully if the module isn't loaded, preventing 500 errors. Always use this pattern when writing portable <code>.htaccess</code> files.</li>
+                                <li><strong><code>Options -Indexes</code> prevents directory listing</strong> — without this, if Apache can't find an index file, it shows a browseable file listing of your directory. This is a serious information disclosure risk in production.</li>
+                                <li><strong>MIME types matter for caching and CSP</strong> — if a browser receives a <code>.js</code> file with the wrong MIME type (like <code>text/plain</code>), it may refuse to execute it. Always declare correct MIME types explicitly.</li>
+                                <li><strong><code>mod_deflate</code> needs <code>mod_filter</code> for safe selective compression</strong> — without <code>mod_filter</code>, <code>AddOutputFilterByType</code> can cause issues when responses pass through multiple filters. Using <code>&lt;IfModule mod_filter.c&gt;</code> inside is best practice.</li>
+                                <li><strong>The SPA fallback <code>RewriteRule ^ /index.html [L]</code></strong> — this catches any path that isn't a real file or directory and serves <code>index.html</code>. Without it, navigating directly to an anchor like <code>/protocols</code> returns a 404 because there's no physical file at that path.</li>
+                                <li><strong>Never serve the <code>.htaccess</code> file itself publicly</strong> — Apache blocks it by default (files beginning with <code>.</code>), but the <code>&lt;FilesMatch "^\."&gt;</code> rule makes this explicit and safe across configurations.</li>
+                            </ul> -->
+
                             <p class="reference-links">
                                 <a href="https://httpd.apache.org/docs/" target="_blank" rel="noreferrer">Official docs</a>
                                 <a href="https://httpd.apache.org/docs/current/mod/prefork.html" target="_blank" rel="noreferrer">Prefork MPM</a>
                                 <a href="https://httpd.apache.org/docs/current/vhosts/" target="_blank" rel="noreferrer">VirtualHost guide</a>
+                                <a href=".htaccess" target="_blank" rel="noreferrer">View .htaccess</a>
                             </p>
                         </div>
                     </details>
@@ -898,301 +933,6 @@ server {
                                 </ul>
                             </div>
 
-                            <!-- ── Full server.xml config ── -->
-                            <p style="margin-top:1.2rem"><strong>📄 server.xml — Full configuration:</strong></p>
-                            <pre><code>&lt;!-- ═══════════════════════════════════════
-     conf/server.xml — Tomcat's main config
-     ═══════════════════════════════════════ --&gt;
-
-&lt;!-- Server: the top-level element.
-     port 8005 = admin shutdown port (change or disable in production!) --&gt;
-&lt;Server port="8005" shutdown="SHUTDOWN"&gt;
-
-  &lt;!-- Listeners: hook into Tomcat lifecycle events --&gt;
-  &lt;Listener className="org.apache.catalina.startup.VersionLoggerListener" /&gt;
-  &lt;Listener className="org.apache.catalina.core.AprLifecycleListener"
-            SSLEngine="on" /&gt;
-  &lt;Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" /&gt;
-  &lt;Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" /&gt;
-
-  &lt;!-- Global JNDI Resources (e.g., shared JDBC connection pools) --&gt;
-  &lt;GlobalNamingResources&gt;
-    &lt;Resource name="UserDatabase"
-              auth="Container"
-              type="org.apache.catalina.UserDatabase"
-              description="User database for authentication"
-              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
-              pathname="conf/tomcat-users.xml" /&gt;
-  &lt;/GlobalNamingResources&gt;
-
-  &lt;Service name="Catalina"&gt;
-
-    &lt;!-- ── HTTP Connector ─────────────────────────────── --&gt;
-    &lt;!-- Listens on port 8080 for direct HTTP traffic     --&gt;
-    &lt;Connector port="8080"
-               protocol="HTTP/1.1"
-               connectionTimeout="20000"
-               redirectPort="8443"
-               maxThreads="200"
-               minSpareThreads="10"
-               maxConnections="8192"
-               URIEncoding="UTF-8"
-               compression="on"
-               compressionMinSize="2048"
-               server="Apache" /&gt;
-               &lt;!-- server="" hides Tomcat version from headers --&gt;
-
-    &lt;!-- ── HTTPS Connector (direct SSL, no front-end proxy) ── --&gt;
-    &lt;!-- Only needed if Tomcat terminates TLS itself           --&gt;
-    &lt;Connector port="8443"
-               protocol="org.apache.coyote.http11.Http11NioProtocol"
-               SSLEnabled="true"
-               maxThreads="150"
-               scheme="https" secure="true"
-               keystoreFile="conf/keystore.jks"
-               keystorePass="changeit"
-               clientAuth="false"
-               sslProtocol="TLS" /&gt;
-
-    &lt;!-- ── AJP Connector ─────────────────────────────── --&gt;
-    &lt;!-- Used when Apache httpd sits in front via mod_jk  --&gt;
-    &lt;!-- ⚠️ Always bind to loopback (127.0.0.1) only!    --&gt;
-    &lt;Connector protocol="AJP/1.3"
-               address="127.0.0.1"
-               port="8009"
-               redirectPort="8443"
-               secretRequired="true"
-               secret="my-ajp-secret-key"
-               tomcatAuthentication="false" /&gt;
-               &lt;!-- tomcatAuthentication=false: trust Apache's auth --&gt;
-               &lt;!-- Disable entirely if not using Apache httpd:
-               comment out the Connector element above --&gt;
-
-    &lt;!-- ── Engine ────────────────────────────────────── --&gt;
-    &lt;Engine name="Catalina" defaultHost="localhost"&gt;
-
-      &lt;!-- Realm: how Tomcat authenticates users          --&gt;
-      &lt;!-- LockOut wraps another realm to prevent brute force --&gt;
-      &lt;Realm className="org.apache.catalina.realm.LockOutRealm"&gt;
-        &lt;!-- UserDatabase Realm: reads from tomcat-users.xml --&gt;
-        &lt;Realm className="org.apache.catalina.realm.UserDatabaseRealm"
-               resourceName="UserDatabase" /&gt;
-        &lt;!-- Or use a JDBC Realm (database-backed auth): --&gt;
-        &lt;!--
-        &lt;Realm className="org.apache.catalina.realm.JDBCRealm"
-               driverName="com.mysql.jdbc.Driver"
-               connectionURL="jdbc:mysql://localhost/tomcat?user=db&amp;password=pass"
-               userTable="users" userNameCol="username" userCredCol="password_hash"
-               userRoleTable="user_roles" roleNameCol="role_name" /&gt;
-        --&gt;
-      &lt;/Realm&gt;
-
-      &lt;!-- ── Virtual Host ─────────────────────────────── --&gt;
-      &lt;Host name="localhost"
-            appBase="webapps"
-            unpackWARs="true"
-            autoDeploy="true"
-            deployOnStartup="true"&gt;
-
-        &lt;!-- Access log valve: records every request --&gt;
-        &lt;Valve className="org.apache.catalina.valves.AccessLogValve"
-               directory="logs"
-               prefix="localhost_access_log"
-               suffix=".txt"
-               pattern="%h %l %u %t &amp;quot;%r&amp;quot; %s %b %D ms" /&gt;
-
-        &lt;!-- RemoteAddr Valve: IP whitelist / blacklist --&gt;
-        &lt;Valve className="org.apache.catalina.valves.RemoteAddrValve"
-               allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1"
-               denyStatus="403" /&gt;
-
-        &lt;!-- Explicit Context: override defaults for one app --&gt;
-        &lt;Context path="/myapp"
-                 docBase="/opt/apps/myapp.war"
-                 reloadable="false"
-                 crossContext="false"
-                 sessionCookieHttpOnly="true"
-                 sessionCookieSecure="true"&gt;
-
-          &lt;!-- JNDI DataSource for this app --&gt;
-          &lt;Resource name="jdbc/MyDB"
-                    auth="Container"
-                    type="javax.sql.DataSource"
-                    maxTotal="20" maxIdle="10"
-                    maxWaitMillis="10000"
-                    username="dbuser" password="dbpass"
-                    driverClassName="com.mysql.cj.jdbc.Driver"
-                    url="jdbc:mysql://localhost:3306/mydb?useSSL=true" /&gt;
-        &lt;/Context&gt;
-      &lt;/Host&gt;
-    &lt;/Engine&gt;
-  &lt;/Service&gt;
-&lt;/Server&gt;</code></pre>
-
-                            <!-- ── web.xml URL Patterns ── -->
-                            <p style="margin-top:1.2rem"><strong>📄 WEB-INF/web.xml — URL patterns, security, sessions:</strong></p>
-                            <pre><code>&lt;!-- web.xml lives inside your .war under WEB-INF/ --&gt;
-&lt;web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="5.0"&gt;
-
-  &lt;!-- ── Servlet Mapping ─────────────────────── --&gt;
-  &lt;servlet&gt;
-    &lt;servlet-name&gt;ProductServlet&lt;/servlet-name&gt;
-    &lt;servlet-class&gt;com.example.ProductServlet&lt;/servlet-class&gt;
-    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;
-  &lt;/servlet&gt;
-  &lt;servlet-mapping&gt;
-    &lt;servlet-name&gt;ProductServlet&lt;/servlet-name&gt;
-    &lt;url-pattern&gt;/products/*&lt;/url-pattern&gt;
-    &lt;!-- Matches: /products/, /products/42, /products/search --&gt;
-  &lt;/servlet-mapping&gt;
-
-  &lt;!-- ── Filters ──────────────────────────────── --&gt;
-  &lt;filter&gt;
-    &lt;filter-name&gt;AuthFilter&lt;/filter-name&gt;
-    &lt;filter-class&gt;com.example.AuthFilter&lt;/filter-class&gt;
-  &lt;/filter&gt;
-  &lt;filter-mapping&gt;
-    &lt;filter-name&gt;AuthFilter&lt;/filter-name&gt;
-    &lt;url-pattern&gt;/admin/*&lt;/url-pattern&gt;
-  &lt;/filter-mapping&gt;
-
-  &lt;!-- ── Session Config ───────────────────────── --&gt;
-  &lt;session-config&gt;
-    &lt;session-timeout&gt;30&lt;/session-timeout&gt;  &lt;!-- minutes --&gt;
-    &lt;cookie-config&gt;
-      &lt;http-only&gt;true&lt;/http-only&gt;    &lt;!-- no JS access --&gt;
-      &lt;secure&gt;true&lt;/secure&gt;           &lt;!-- HTTPS only --&gt;
-      &lt;same-site&gt;Strict&lt;/same-site&gt;  &lt;!-- CSRF protection --&gt;
-    &lt;/cookie-config&gt;
-    &lt;tracking-mode&gt;COOKIE&lt;/tracking-mode&gt;
-  &lt;/session-config&gt;
-
-  &lt;!-- ── Security Constraints ─────────────────── --&gt;
-  &lt;security-constraint&gt;
-    &lt;web-resource-collection&gt;
-      &lt;web-resource-name&gt;Admin area&lt;/web-resource-name&gt;
-      &lt;url-pattern&gt;/admin/*&lt;/url-pattern&gt;
-      &lt;http-method&gt;GET&lt;/http-method&gt;
-      &lt;http-method&gt;POST&lt;/http-method&gt;
-    &lt;/web-resource-collection&gt;
-    &lt;auth-constraint&gt;
-      &lt;role-name&gt;admin&lt;/role-name&gt;
-    &lt;/auth-constraint&gt;
-    &lt;!-- Force HTTPS for this protected area --&gt;
-    &lt;user-data-constraint&gt;
-      &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
-    &lt;/user-data-constraint&gt;
-  &lt;/security-constraint&gt;
-
-  &lt;!-- Login configuration --&gt;
-  &lt;login-config&gt;
-    &lt;auth-method&gt;FORM&lt;/auth-method&gt;
-    &lt;form-login-config&gt;
-      &lt;form-login-page&gt;/login.jsp&lt;/form-login-page&gt;
-      &lt;form-error-page&gt;/login-error.jsp&lt;/form-error-page&gt;
-    &lt;/form-login-config&gt;
-  &lt;/login-config&gt;
-
-  &lt;!-- ── Error pages ─────────────────────────── --&gt;
-  &lt;error-page&gt;
-    &lt;error-code&gt;404&lt;/error-code&gt;
-    &lt;location&gt;/WEB-INF/views/404.jsp&lt;/location&gt;
-  &lt;/error-page&gt;
-  &lt;error-page&gt;
-    &lt;exception-type&gt;java.lang.Exception&lt;/exception-type&gt;
-    &lt;location&gt;/WEB-INF/views/error.jsp&lt;/location&gt;
-  &lt;/error-page&gt;
-
-  &lt;!-- ── JNDI Lookup in web.xml ─────────────── --&gt;
-  &lt;resource-ref&gt;
-    &lt;res-ref-name&gt;jdbc/MyDB&lt;/res-ref-name&gt;
-    &lt;res-type&gt;javax.sql.DataSource&lt;/res-type&gt;
-    &lt;res-auth&gt;Container&lt;/res-auth&gt;
-  &lt;/resource-ref&gt;
-
-&lt;/web-app&gt;</code></pre>
-
-                            <!-- ── Java Servlet example ── -->
-                            <p style="margin-top:1.2rem"><strong>☕ Java Servlet — example:</strong></p>
-                            <pre><code>// Annotation maps this servlet to URL pattern /products/*
-@WebServlet(
-    name = "ProductServlet",
-    urlPatterns = {"/products", "/products/*"},
-    loadOnStartup = 1          // load at startup, don't wait for first request
-)
-public class ProductServlet extends HttpServlet {
-
-    private ProductService service;
-
-    @Override
-    public void init() throws ServletException {
-        // Runs ONCE when servlet is first loaded
-        // Look up a JDBC DataSource from Tomcat's JNDI context
-        try {
-            Context ctx = new InitialContext();
-            DataSource ds = (DataSource) ctx.lookup("java:comp/env/jdbc/MyDB");
-            this.service = new ProductService(ds);
-        } catch (NamingException e) {
-            throw new ServletException("JNDI lookup failed", e);
-        }
-    }
-
-    @Override
-    protected void doGet(HttpServletRequest req,
-                         HttpServletResponse res)
-            throws ServletException, IOException {
-
-        String id = req.getPathInfo();          // e.g. /42
-        String format = req.getParameter("fmt"); // e.g. ?fmt=json
-
-        // Security: check session / role
-        HttpSession session = req.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            res.sendRedirect(req.getContextPath() + "/login.jsp");
-            return;
-        }
-
-        // Fetch data
-        Product product = service.findById(id);
-
-        // Respond: JSON or HTML
-        if ("json".equalsIgnoreCase(format)) {
-            res.setContentType("application/json;charset=UTF-8");
-            res.getWriter().println(product.toJson());
-        } else {
-            req.setAttribute("product", product);
-            req.getRequestDispatcher("/WEB-INF/views/product.jsp")
-               .forward(req, res);     // forward to JSP for rendering
-        }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req,
-                          HttpServletResponse res)
-            throws ServletException, IOException {
-        // Parse body parameters
-        String name  = req.getParameter("name");
-        String price = req.getParameter("price");
-
-        // CSRF token validation example
-        String csrfToken  = req.getParameter("_csrf");
-        String sessionToken = (String) req.getSession().getAttribute("csrfToken");
-        if (!csrfToken.equals(sessionToken)) {
-            res.sendError(403, "CSRF validation failed");
-            return;
-        }
-
-        service.create(name, Double.parseDouble(price));
-        res.sendRedirect(req.getContextPath() + "/products");
-    }
-
-    @Override
-    public void destroy() {
-        // Runs ONCE when servlet is unloaded (app undeploy / restart)
-        service.close();
-    }
-}</code></pre>
-
                             <!-- ── Security hardening table ── -->
                             <p style="margin-top:1.2rem"><strong>🔒 Tomcat Security Hardening — quick checklist:</strong></p>
                             <table>
@@ -1281,23 +1021,6 @@ public class ProductServlet extends HttpServlet {
                                 </tbody>
                             </table>
 
-                            <pre><code># conf/tomcat-users.xml — enable Manager App access
-&lt;tomcat-users&gt;
-  &lt;role rolename="manager-gui" /&gt;       &lt;!-- web UI access --&gt;
-  &lt;role rolename="manager-script" /&gt;    &lt;!-- REST API / curl --&gt;
-  &lt;role rolename="manager-jmx" /&gt;       &lt;!-- JMX access --&gt;
-  &lt;user username="admin"
-        password="strongPassword123!"
-        roles="manager-gui,manager-script" /&gt;
-&lt;/tomcat-users&gt;
-
-# ⚠️ In production: IP-restrict Manager App via context.xml
-# webapps/manager/META-INF/context.xml
-&lt;Context antiResourceLocking="false" privileged="true"&gt;
-  &lt;Valve className="org.apache.catalina.valves.RemoteAddrValve"
-         allow="127\.\d+\.\d+\.\d+|::1" /&gt;
-&lt;/Context&gt;</code></pre>
-
                             <!-- ── Session Clustering ── -->
                             <div class="server-arch-diagram" style="margin-top:1rem">
                                 <div class="arch-title">🔗 Session Clustering &amp; Replication</div>
@@ -1342,36 +1065,9 @@ public class ProductServlet extends HttpServlet {
                                     <tr><td><code>manager.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat Manager App activity</td></tr>
                                 </tbody>
                             </table>
-                            <pre><code># conf/logging.properties — control Tomcat's internal log levels
-# Available levels: SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST
-org.apache.catalina.core.ContainerBase.[Catalina].[localhost].level = INFO
-org.apache.catalina.core.ContainerBase.[Catalina].[localhost].handlers = \
-    2localhost.org.apache.juli.AsyncFileHandler
-
-# Reduce noise from specific classes
-org.apache.jasper.level = WARNING
-org.apache.coyote.level = WARNING
-
-# Your app can use Log4j2 by adding log4j2.xml to WEB-INF/classes/
-# and adding log4j-core + log4j-api JARs to WEB-INF/lib/</code></pre>
-
-                            <!-- ── JVM Tuning ── -->
-                            <p style="margin-top:1.2rem"><strong>⚙️ JVM Tuning for Tomcat (CATALINA_OPTS / JAVA_OPTS):</strong></p>
-                            <pre><code># bin/setenv.sh — create this file to set JVM options (not included by default)
-export CATALINA_OPTS="\
-  -server \
-  -Xms512m -Xmx2g \            # initial and max heap
-  -XX:MetaspaceSize=128m \     # initial metaspace (class definitions)
-  -XX:MaxMetaspaceSize=512m \  # max metaspace — prevents unlimited growth
-  -XX:+UseG1GC \               # G1 Garbage Collector — best for most Tomcat workloads
-  -XX:MaxGCPauseMillis=200 \   # target GC pause ≤ 200ms
-  -XX:+HeapDumpOnOutOfMemoryError \
-  -XX:HeapDumpPath=/var/log/tomcat/heapdump.hprof \
-  -Djava.security.egd=file:/dev/./urandom \  # fix slow SecureRandom on Linux
-  -Dfile.encoding=UTF-8"
-
-# JAVA_OPTS applies to ALL java commands (including shutdown script), so prefer CATALINA_OPTS
-# Quick memory estimation: heap = (avg request memory × max threads) + headroom</code></pre>
+                            <p class="reference-links" style="margin-top:0.4rem">
+                                <a href="tomcat-logging-properties.conf" target="_blank" rel="noreferrer">📋 View logging.properties (conf/logging.properties)</a>
+                            </p>
 
                             <!-- ── Tomcat File Layout ── -->
                             <p style="margin-top:1.2rem"><strong>📁 Tomcat directory structure at a glance:</strong></p>
@@ -1386,6 +1082,17 @@ export CATALINA_OPTS="\
 │   └── manager/       # Tomcat Manager App (restrict or remove in production)
 ├── work/              # Compiled JSP pages (.class files from Jasper)
 └── temp/              # Temporary files (uploaded parts, etc.)</code></pre>
+
+                            <!-- ── Full server.xml config ── -->
+                            <p style="margin-top:1.2rem"><strong>📁 Samples:</strong></p>
+                            <p class="reference-links" style="margin-top:0.4rem">
+                                <a href="tomcat-server-xml.conf" target="_blank" rel="noreferrer">📄 View server.xml (conf/server.xml)</a>
+                                <a href="tomcat-web-xml.xml" target="_blank" rel="noreferrer">📄 View web.xml (WEB-INF/web.xml)</a>
+                                <a href="tomcat-context-xml.xml" target="_blank" rel="noreferrer">📄 View context.xml (conf/context.xml)</a>
+                                <a href="tomcat-users-xml.xml" target="_blank" rel="noreferrer">👤 View tomcat-users.xml (conf/tomcat-users.xml)</a>
+                                <a href="tomcat-setenv-sh.sh" target="_blank" rel="noreferrer">⚙️ View setenv.sh (bin/setenv.sh)</a>
+                                <a href="tomcat-servlet-example.java" target="_blank" rel="noreferrer">☕ View Sample (Servlet.java)</a>
+                            </p>
 
                             <!-- Comparison table -->
                             <p><strong>Nginx vs Apache vs Tomcat — at a glance:</strong></p>

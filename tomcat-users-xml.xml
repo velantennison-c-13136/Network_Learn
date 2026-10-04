@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ═══════════════════════════════════════════════════════════
+     conf/tomcat-users.xml — Local user accounts and roles
+     Used by the UserDatabaseRealm (default Realm in server.xml)
+     ⚠️  For production: use JDBC Realm or LDAP Realm instead.
+     ═══════════════════════════════════════════════════════════ -->
+
+<tomcat-users xmlns="http://tomcat.apache.org/xml"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+              version="1.0">
+
+  <!-- ── Role definitions ──────────────────────────────────── -->
+  <!--
+    Roles used by Tomcat's built-in apps and your own web apps.
+    You can define any role name here and reference it in web.xml
+    security-constraint -> auth-constraint -> role-name.
+
+    Tomcat built-in roles (for Manager & Host Manager apps):
+      manager-gui     → access the Manager web UI (/manager/html)
+      manager-script  → REST API / curl deployments (/manager/text)
+      manager-jmx     → JMX proxy access
+      manager-status  → status page only (/manager/status)
+      admin-gui       → Host Manager web UI
+      admin-script    → Host Manager REST API
+  -->
+
+  <role rolename="manager-gui"/>
+  <role rolename="manager-script"/>
+  <role rolename="manager-jmx"/>
+  <role rolename="manager-status"/>
+  <role rolename="admin-gui"/>
+  <role rolename="admin-script"/>
+
+  <!-- Application-level roles (referenced in WEB-INF/web.xml) -->
+  <role rolename="admin"/>
+  <role rolename="user"/>
+  <role rolename="readonly"/>
+
+  <!-- ── User accounts ─────────────────────────────────────── -->
+  <!--
+    ⚠️  SECURITY WARNINGS:
+    1. NEVER use weak passwords in production.
+    2. ALWAYS IP-restrict the Manager/Host-Manager apps via RemoteAddrValve
+       (see webapps/manager/META-INF/context.xml).
+    3. In production, remove or disable accounts you don't use.
+    4. Consider disabling manager-gui and only allowing manager-script
+       (no browser access to the GUI reduces attack surface).
+    5. Passwords here are PLAIN TEXT — use a Digest realm or
+       switch to JDBC/LDAP realm for hashed credentials.
+  -->
+
+  <!-- Tomcat Manager App access — restrict to localhost in context.xml! -->
+  <user username="admin"
+        password="StrongPassword123!"
+        roles="manager-gui,manager-script,manager-status,admin-gui,admin-script"/>
+
+  <!-- CI/CD pipeline account — script-only, no GUI access -->
+  <user username="deployer"
+        password="DeployerSecret456!"
+        roles="manager-script"/>
+
+  <!-- Read-only monitoring account (Prometheus / Nagios health checks) -->
+  <user username="monitor"
+        password="MonitorPass789!"
+        roles="manager-status"/>
+
+  <!-- Application-level user (authenticated by your web app via web.xml) -->
+  <user username="appuser"
+        password="AppUserPass!"
+        roles="user"/>
+
+  <!-- Application admin account -->
+  <user username="appadmin"
+        password="AppAdminPass!"
+        roles="admin,user"/>
+
+</tomcat-users>
+
+<!--
+  ── How to use a Digest password instead of plain text ────────────────
+
+  1. Generate the digest (SHA-256 example):
+       $CATALINA_HOME/bin/digest.sh -a SHA-256 -s 0 "mypassword"
+     Output:  mypassword:$2a$10$...hashed...
+
+  2. Add CredentialHandler to the Realm in server.xml:
+       <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+              resourceName="UserDatabase">
+         <CredentialHandler className="org.apache.catalina.realm.MessageDigestCredentialHandler"
+                            algorithm="SHA-256"/>
+       </Realm>
+
+  3. Replace password attribute with the hash:
+       <user username="admin" password="HASHED_VALUE" roles="manager-gui"/>
+
+  ── Switching to JDBC Realm (recommended for real production) ─────────
+
+  Instead of this file, authenticate against a database table:
+
+  In server.xml replace the UserDatabaseRealm with:
+    <Realm className="org.apache.catalina.realm.JDBCRealm"
+           driverName="com.mysql.cj.jdbc.Driver"
+           connectionURL="jdbc:mysql://localhost:3306/tomcatdb?useSSL=true"
+           connectionName="dbuser" connectionPassword="dbpass"
+           userTable="tomcat_users"    userNameCol="username"
+           userCredCol="password_hash"
+           userRoleTable="tomcat_roles" roleNameCol="role_name"
+           digest="SHA-256"/>
+
+  SQL to create the tables:
+    CREATE TABLE tomcat_users (
+        username      VARCHAR(100) NOT NULL PRIMARY KEY,
+        password_hash VARCHAR(255) NOT NULL
+    );
+    CREATE TABLE tomcat_roles (
+        username  VARCHAR(100) NOT NULL,
+        role_name VARCHAR(100) NOT NULL,
+        PRIMARY KEY (username, role_name)
+    );
+-->
