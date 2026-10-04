@@ -1269,18 +1269,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const port = parseInt(document.getElementById('fw-port').value);
             const res = document.getElementById('fw-result');
 
-            let allowed = false;
-            let rule = '';
-            if (src === 'app' && port === 1433) { allowed = true; rule = 'Rule 1: App Subnet → Port 1433 ALLOW'; }
-            else if ([443, 80, 22].includes(port)) { allowed = true; rule = `Rule: Any → Port ${port} ALLOW`; }
-            else { rule = 'Rule 5: Default DENY — no matching allow rule'; }
+            if (isNaN(port) || port < 1 || port > 65535) {
+                res.innerHTML = '<p class="demo-error">Enter a valid port number (1–65535)</p>';
+                return;
+            }
+
+            // Firewall rules evaluated top-down — first match wins
+            const rules = [
+                { num: 1, srcMatch: 'app',  port: 1433, action: 'ALLOW', label: 'Rule 1: App Subnet → Port 1433 ALLOW' },
+                { num: 2, srcMatch: 'any',  port: 443,  action: 'ALLOW', label: 'Rule 2: Any → Port 443 ALLOW' },
+                { num: 3, srcMatch: 'any',  port: 80,   action: 'ALLOW', label: 'Rule 3: Any → Port 80 ALLOW' },
+                { num: 4, srcMatch: 'any',  port: 22,   action: 'ALLOW', label: 'Rule 4: Any → Port 22 ALLOW' },
+                { num: 5, srcMatch: 'any',  port: null,  action: 'DENY',  label: 'Rule 5: Default DENY — no matching allow rule' },
+            ];
+
+            let matched = null;
+            for (const rule of rules) {
+                const srcOk = rule.srcMatch === 'any' || rule.srcMatch === src;
+                const portOk = rule.port === null || rule.port === port;
+                if (srcOk && portOk) { matched = rule; break; }
+            }
+
+            const allowed = matched && matched.action === 'ALLOW';
+            const srcLabel = src === 'app' ? 'App Subnet' : 'Internet';
 
             res.innerHTML = `
                 <div class="demo-fw-verdict ${allowed ? 'demo-fw-pass' : 'demo-fw-block'}">
                     ${allowed ? '✅ ALLOWED' : '🚫 BLOCKED'}
                 </div>
-                <p><strong>Source:</strong> ${src === 'app' ? 'App Subnet' : 'Internet'} | <strong>Port:</strong> ${port}</p>
-                <p><strong>Matched:</strong> ${rule}</p>
+                <p><strong>Source:</strong> ${srcLabel} | <strong>Port:</strong> ${port}</p>
+                <p><strong>Matched:</strong> ${matched ? matched.label : 'Rule 5: Default DENY'}</p>
             `;
         });
     }
