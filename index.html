@@ -1053,22 +1053,6 @@ server {
                                 </ul>
                             </div>
 
-                            <!-- ── Logging ── -->
-                            <p style="margin-top:1.2rem"><strong>📋 Logging in Tomcat:</strong></p>
-                            <table>
-                                <thead><tr><th>Log file</th><th>Location</th><th>What it contains</th></tr></thead>
-                                <tbody>
-                                    <tr><td><code>catalina.out</code></td><td>logs/</td><td>Tomcat startup, shutdown, and all System.out/System.err from apps</td></tr>
-                                    <tr><td><code>catalina.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat internal logging (Catalina, Coyote, Jasper)</td></tr>
-                                    <tr><td><code>localhost.YYYY-MM-DD.log</code></td><td>logs/</td><td>Per-host errors and app context startup errors</td></tr>
-                                    <tr><td><code>localhost_access_log.txt</code></td><td>logs/</td><td>HTTP access log (configured via AccessLogValve)</td></tr>
-                                    <tr><td><code>manager.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat Manager App activity</td></tr>
-                                </tbody>
-                            </table>
-                            <p class="reference-links" style="margin-top:0.4rem">
-                                <a href="tomcat-logging-properties.txt" target="_blank" rel="noreferrer">📋 View logging.properties (conf/logging.properties)</a>
-                            </p>
-
                             <!-- ── Tomcat File Layout ── -->
                             <p style="margin-top:1.2rem"><strong>📁 Tomcat directory structure at a glance:</strong></p>
                             <pre><code>$CATALINA_HOME/
@@ -1093,7 +1077,21 @@ server {
                                 <a href="tomcat-setenv-sh.txt" target="_blank" rel="noreferrer">⚙️ View setenv.sh (bin/setenv.sh)</a>
                                 <a href="tomcat-servlet-example.txt" target="_blank" rel="noreferrer">☕ View Sample (Servlet.java)</a>
                             </p>
-
+                            <!-- ── Logging ── -->
+                            <p style="margin-top:1.2rem"><strong>📋 Logging in Tomcat:</strong></p>
+                            <table>
+                                <thead><tr><th>Log file</th><th>Location</th><th>What it contains</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>catalina.out</code></td><td>logs/</td><td>Tomcat startup, shutdown, and all System.out/System.err from apps</td></tr>
+                                    <tr><td><code>catalina.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat internal logging (Catalina, Coyote, Jasper)</td></tr>
+                                    <tr><td><code>localhost.YYYY-MM-DD.log</code></td><td>logs/</td><td>Per-host errors and app context startup errors</td></tr>
+                                    <tr><td><code>localhost_access_log.txt</code></td><td>logs/</td><td>HTTP access log (configured via AccessLogValve)</td></tr>
+                                    <tr><td><code>manager.YYYY-MM-DD.log</code></td><td>logs/</td><td>Tomcat Manager App activity</td></tr>
+                                </tbody>
+                            </table>
+                            <p class="reference-links" style="margin-top:0.4rem">
+                                <a href="tomcat-logging-properties.txt" target="_blank" rel="noreferrer">📋 View logging.properties (conf/logging.properties)</a>
+                            </p>
                             <!-- Comparison table -->
                             <p><strong>Nginx vs Apache vs Tomcat — at a glance:</strong></p>
                             <table>
