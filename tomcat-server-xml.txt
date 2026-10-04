@@ -1,0 +1,128 @@
+<!-- ═══════════════════════════════════════
+     conf/server.xml — Tomcat's main config
+     ═══════════════════════════════════════ -->
+
+<!-- Server: the top-level element.
+     port 8005 = admin shutdown port (change or disable in production!) -->
+<Server port="8005" shutdown="SHUTDOWN">
+
+  <!-- Listeners: hook into Tomcat lifecycle events -->
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+  <Listener className="org.apache.catalina.core.AprLifecycleListener"
+            SSLEngine="on" />
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+
+  <!-- Global JNDI Resources (e.g., shared JDBC connection pools) -->
+  <GlobalNamingResources>
+    <Resource name="UserDatabase"
+              auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database for authentication"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" />
+  </GlobalNamingResources>
+
+  <Service name="Catalina">
+
+    <!-- ── HTTP Connector ─────────────────────────────── -->
+    <!-- Listens on port 8080 for direct HTTP traffic     -->
+    <Connector port="8080"
+               protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443"
+               maxThreads="200"
+               minSpareThreads="10"
+               maxConnections="8192"
+               URIEncoding="UTF-8"
+               compression="on"
+               compressionMinSize="2048"
+               server="Apache" />
+               <!-- server="" hides Tomcat version from headers -->
+
+    <!-- ── HTTPS Connector (direct SSL, no front-end proxy) ── -->
+    <!-- Only needed if Tomcat terminates TLS itself           -->
+    <Connector port="8443"
+               protocol="org.apache.coyote.http11.Http11NioProtocol"
+               SSLEnabled="true"
+               maxThreads="150"
+               scheme="https" secure="true"
+               keystoreFile="conf/keystore.jks"
+               keystorePass="changeit"
+               clientAuth="false"
+               sslProtocol="TLS" />
+
+    <!-- ── AJP Connector ─────────────────────────────── -->
+    <!-- Used when Apache httpd sits in front via mod_jk  -->
+    <!-- ⚠️ Always bind to loopback (127.0.0.1) only!    -->
+    <Connector protocol="AJP/1.3"
+               address="127.0.0.1"
+               port="8009"
+               redirectPort="8443"
+               secretRequired="true"
+               secret="my-ajp-secret-key"
+               tomcatAuthentication="false" />
+               <!-- tomcatAuthentication=false: trust Apache's auth -->
+               <!-- Disable entirely if not using Apache httpd:
+               comment out the Connector element above -->
+
+    <!-- ── Engine ────────────────────────────────────── -->
+    <Engine name="Catalina" defaultHost="localhost">
+
+      <!-- Realm: how Tomcat authenticates users          -->
+      <!-- LockOut wraps another realm to prevent brute force -->
+      <Realm className="org.apache.catalina.realm.LockOutRealm">
+        <!-- UserDatabase Realm: reads from tomcat-users.xml -->
+        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase" />
+        <!-- Or use a JDBC Realm (database-backed auth): -->
+        <!--
+        <Realm className="org.apache.catalina.realm.JDBCRealm"
+               driverName="com.mysql.jdbc.Driver"
+               connectionURL="jdbc:mysql://localhost/tomcat?user=db&password=pass"
+               userTable="users" userNameCol="username" userCredCol="password_hash"
+               userRoleTable="user_roles" roleNameCol="role_name" />
+        -->
+      </Realm>
+
+      <!-- ── Virtual Host ─────────────────────────────── -->
+      <Host name="localhost"
+            appBase="webapps"
+            unpackWARs="true"
+            autoDeploy="true"
+            deployOnStartup="true">
+
+        <!-- Access log valve: records every request -->
+        <Valve className="org.apache.catalina.valves.AccessLogValve"
+               directory="logs"
+               prefix="localhost_access_log"
+               suffix=".txt"
+               pattern="%h %l %u %t &quot;%r&quot; %s %b %D ms" />
+
+        <!-- RemoteAddr Valve: IP whitelist / blacklist -->
+        <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+               allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1"
+               denyStatus="403" />
+
+        <!-- Explicit Context: override defaults for one app -->
+        <Context path="/myapp"
+                 docBase="/opt/apps/myapp.war"
+                 reloadable="false"
+                 crossContext="false"
+                 sessionCookieHttpOnly="true"
+                 sessionCookieSecure="true">
+
+          <!-- JNDI DataSource for this app -->
+          <Resource name="jdbc/MyDB"
+                    auth="Container"
+                    type="javax.sql.DataSource"
+                    maxTotal="20" maxIdle="10"
+                    maxWaitMillis="10000"
+                    username="dbuser" password="dbpass"
+                    driverClassName="com.mysql.cj.jdbc.Driver"
+                    url="jdbc:mysql://localhost:3306/mydb?useSSL=true" />
+        </Context>
+      </Host>
+    </Engine>
+  </Service>
+</Server>
